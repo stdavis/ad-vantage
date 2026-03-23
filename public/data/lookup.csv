@@ -1,4 +1,163 @@
-Task#,Vantage,Notes
-TASK001,Project Alpha - Backend Development,Example row
-TASK002,Project Beta - UI Design,Example row
-TASK003,Internal - Team Meeting,Example row
+,,,,,,,,,,,,
+,,,DTS UGRC Operations - FY26 - PRJ0398013,,,,NOTES,,,,,
+New,Missing in Vantage,Notes,Task Name,Vantage,,Task #,,,,,,
+TRUE,FALSE,,ApAdmin Auth Migration,ApAdmin Auth Mi,,PRJTASK0676127,Added 1/15/26,,,,,
+,FALSE,,ArcGIS Enterprise Portal,ArcGIS Enterpri,,PRJTASK0643278,,,,,,
+,FALSE,,Database Support,Database Suppor,,PRJTASK0642993,,,,,,
+,FALSE,,Dependabot - GitHub Repository Security,Dependabot - Gi,,PRJTASK0642998,,,,,,
+,FALSE,,Discover System Maintenance,Discover System,,PRJTASK0643003,,,,,,
+,FALSE,,Forklift,Forklift,,PRJTASK0643007,,,,,,
+,TRUE,,Mapserv Maintenance,Mapserv Mainten,,PRJTASK0643012,,,,,,
+,FALSE,,Misc Operational Tasks,Misc Operationa,,PRJTASK0643026,Please use notes to describe activities,,,,,
+,FALSE,,PI Planning,PI Planning,,PRJTASK0643062,,,,,,
+,TRUE,,SGID Platform Maintenance,SGID Platform M,,PRJTASK0643066,,,,,,
+,FALSE,,API Development and Maintenance-UGRC,API Development,,PRJTASK0643070,,,,,,
+,FALSE,,Cloud Infrastructure Support-UGRC,Cloud Infrastru,,PRJTASK0662967,,,,,,
+,FALSE,,GCVE Exit-UGRC,GCVE Exit-UGRC,,PRJTASK0643078,,,,,,
+,FALSE,,Social Media-UGRC,Social Media-UG,,PRJTASK0643084,,,,,,
+,FALSE,,Website-UGRC,Website-UGRC,,PRJTASK0643074,,,,,,
+TRUE,FALSE,,Website Accessibility Compliance-UGRC,Website Accessi,,PRJTASK0674565,"Added 11/25, after SN UAT Phase 2",,,,,
+,FALSE,,Misc Websites/Components,Misc Websites/C,,PRJTASK0643089,,,,,,
+,,,,,,,,,,,,
+,,,DTS UGRC General Activities and Tasks - PRJ0397937,,,,,,,,,
+,Missing in Vantage,Notes,Task Name,Vantage,,Task #,,,,,,
+,FALSE,,Conferences-Committees-Events,Conferences-Com,,PRJTASK0642858,Please use notes to describe activities,,,,,
+,FALSE,,Federal Coordination,Federal Coordin,,PRJTASK0642866,,,,,,
+,TRUE,,Local Coordination,Local Coordinat,,PRJTASK0642862,,,,,,
+,FALSE,,State Coordination,State Coordinat,,PRJTASK0643273,,,,,,
+,FALSE,,GISAC Meetings & Tasks,GISAC Meetings ,,PRJTASK0642869,,,,,,
+,TRUE,,Meetings,Meetings,,PRJTASK0642874,,,,,,
+,FALSE,,Professional Development,Professional De,,PRJTASK0642878,,,,,,
+,FALSE,,Project Development,Project Develop,,PRJTASK0642882,,,,,,
+,FALSE,,SERT/EOC Support,SERT/EOC Suppor,,PRJTASK0642886,,,,,,
+,,,,,,,,,,,,
+,,,DTS UGRC SGID Maintenance - PRJ0397956,,,,,,,,,
+,Missing in Vantage,Notes,Task Name,Vantage,,Task #,,,,,,
+,FALSE,,Basemap Mgmt & Support,Basemap Mgmt & ,,PRJTASK0642895,,,,,,
+,TRUE,,Data Partnerships,Data Partnershi,,PRJTASK0642900,,,,,,
+,FALSE,,Lt Governor Boundary Certification,Lt Governor Bou,,PRJTASK0642916,,,,,,
+,FALSE,,PLSS Fabric,PLSS Fabric,,PRJTASK0642920,,,,,,
+,FALSE,,Porter,Porter,,PRJTASK0642924,,,,,,
+,FALSE,,SGID Content Updates,SGID Content Up,,PRJTASK0642928,,,,,,
+,TRUE,,SGID Data Stewardship and MATT,SGID Data Stewa,,PRJTASK0642932,,,,,,
+,,,,,,,,,,,,
+,,,DTS UGRC Internal Projects - FY26 - PRJ0397821,,,,,,,,,
+,Missing in Vantage,Notes,Task Name,Vantage,,Task #,,,,,,
+,TRUE,,Masquerade,Masquerade,,PRJTASK0642513,,,,,,
+,FALSE,,MATT (Metadata and Asset Tracking Tool),MATT (Metadata ,,PRJTASK0642520,,,,,,
+,FALSE,,Palletjack,Palletjack,,PRJTASK0642523,,,,,,
+,,,,,,,,,,,,
+,,,DTS UGRC GPS Operations - PRJ0397986,,,,,,,,,
+New,Missing in Vantage,Notes,Task Name,Vantage,ELCID,Task #,,,,,,
+FALSE,FALSE,,GPS Network User Support,GPS Network Use,,PRJTASK0642944,,,,,,
+FALSE,FALSE,,GPS User Group Meetings,GPS User Group ,,PRJTASK0642950,,,,,,
+FALSE,FALSE,,Idaho Stations Support,Idaho Stations ,,PRJTASK0642954,,,,,,
+FALSE,FALSE,,Nevada Stations Support,Nevada Stations,,PRJTASK0642958,,,,,,
+FALSE,FALSE,,PIVOT Server Maintenance,PIVOT Server Ma,,PRJTASK0642962,,,,,,
+FALSE,FALSE,,PLSS - MRRC Committee and Coordination,PLSS - MRRC Com,,PRJTASK0642966,,,,,,
+FALSE,TRUE,,Utah Stations Support,Utah Stations S,,PRJTASK0642970,,,,,,
+FALSE,FALSE,,TurnGPS Application Support,TurnGPS Applica,,PRJTASK0646231,,,,,,
+TRUE,TRUE,,PLSS - CadNSDI data updates,PLSS - CadNSDI ,it6012gps,PRJTASK0664869,,,,,,
+TRUE,FALSE,,TurnGPS Cloud Migration,TurnGPS Cloud M,it6012gps,PRJTASK0666087,,,,,,
+,,,,,,,,,,,,
+,,,DTS UGRC 911 - PRJ0398307,,,,Contract,,,,,
+,Missing in Vantage,Notes,Task Name,Vantage,ELCID,Task #,Type,Link,Needed,Not Needed,End Date,Notes
+,FALSE,,911 General Tasks,911 General Tas,,PRJTASK0643779,,,,,,
+,FALSE,,Address Point Data Updates,Address Point D,,PRJTASK0643784,,,,,,
+,TRUE,,Beaver PSAP TS,Beaver PSAP TS,,PRJTASK0643788,,,,,,
+,FALSE,,Box Elder PSAP TS,Box Elder PSAP ,,PRJTASK0643792,,,,,,
+,FALSE,,Cedar PSAP TS,Cedar PSAP TS,,PRJTASK0643796,,,,,,
+,FALSE,,DPS Systems Support,DPS Systems Sup,,PRJTASK0643800,,,,,,
+,FALSE,,Kane PSAP TS,Kane PSAP TS,,PRJTASK0643806,,,,,,
+,TRUE,,Layton PSAP TS,Layton PSAP TS,,PRJTASK0643811,,,,,,
+,TRUE,,Millard County PSAP TS,Millard County ,,PRJTASK0643815,,,,,,
+,FALSE,,Motorola ArcPro Migration,Motorola ArcPro,,PRJTASK0643879,,,,,,"new task, based on github/446; may need to break it down into tasks per PSAP at some point"
+,FALSE,,NG911 Data Prep,NG911 Data Prep,,PRJTASK0643819,,,,,,
+,TRUE,,Price PSAP TS,Price PSAP TS,,PRJTASK0643822,,,,,,
+,TRUE,,Richfield PSAP TS,Richfield PSAP ,,PRJTASK0643827,,,,,,
+,FALSE,,Roads-Big 5,Roads-Big 5,,PRJTASK0643835,,,,,,
+,FALSE,,Roads-Rural,Roads-Rural,,PRJTASK0643839,,,,,,
+,FALSE,,Roads-SGID,Roads-SGID,,PRJTASK0643843,,,,,,
+,FALSE,,Roads-DB QC,Roads-DB QC,,PRJTASK0643831,,,,,,
+,FALSE,,Roads-Update Tools,Roads-Update To,,PRJTASK0643847,,,,,,
+,FALSE,,St George PSAP TS Ongoing,St George PSAP ,nscsgeorge,PRJTASK0643850,SBA,DPR-1098,FALSE,FALSE,,
+,FALSE,,Salt Lake TOC PSAP TS,Salt Lake TOC P,,PRJTASK0643855,,,,,,
+,FALSE,,Sanpete PSAP TS,Sanpete PSAP TS,,PRJTASK0643859,,,,,,
+TRUE,FALSE,,Summit County - Pro Migration,Summit County -,nssu00,PRJTASK0675977,SBA,DPR-1151,,,,Created on 1/12/26
+,FALSE,,Uintah Basin PSAP TS,Uintah Basin PS,,PRJTASK0643863,,,,,,
+,FALSE,,Utah County PSAP TS,Utah County PSA,,PRJTASK0643871,,,,,,
+,TRUE,,Weber/Morgan 911 Support,Weber/Morgan 91,nswad911,PRJTASK0643875,SBA,DPR-0876,FALSE,FALSE,,
+,,,,,,,,,,,,
+,,,DTS UGRC Maintenance and Support - PRJ0398604,,,,Contract,,,,,
+,Missing in Vantage,Notes,Task Name,Vantage,ELCID,Task #,Type,Link,Needed,Not Needed,End Date,Notes
+,TRUE,,Blue Stakes-Monthly updates & data maintenance,Blue Stakes-Mon,nsblustake,PRJTASK0644771,SBA,DPR-1074,FALSE,FALSE,,
+,FALSE,,DABS-Compliance Maintenance and Support,DABS-Compliance,lqitcomp,PRJTASK0644774,SBA,DPR-1082,FALSE,FALSE,,
+,TRUE,,DDW-Lead Service Line Inventory Map,DDW-Lead Servic,eq3821,PRJTASK0644779,SBA,DPR-1081,FALSE,FALSE,,
+,FALSE,,DEM-Flood Risk Maintenance and Support,DEM-Flood Risk ,psrmm,PRJTASK0644785,SOW,SOW,FALSE,FALSE,,
+,FALSE,,DEQ-IMap,DEQ-IMap,eq1999,PRJTASK0644789,SOW,SOW,FALSE,FALSE,,No end date
+,FALSE,,DERR-Tank Risk Tool Maintenance,DERR-Tank Risk ,eq4370,PRJTASK0644796,SOW,SOW,FALSE,FALSE,,No end date
+,FALSE,,DERR-Tanks SF Integration,DERR-Tanks SF I,eq4366,PRJTASK0673884,N/A,,FALSE,FALSE,,This was added after the second UAT SN phase began on 11/14/25
+,FALSE,,DGO-Fleet Ops Fuels Sites Maintenance,DGO-Fleet Ops F,fofnstat,PRJTASK0644809,SBA,DPR-1090,FALSE,FALSE,,
+,FALSE,,DHHS-LE Locate Map Maintenance,DHHS-LE Locate ,hh7110hcin,PRJTASK0644800,SBA,DPR-1096,FALSE,FALSE,,
+,FALSE,,DHHS-OPCRH Data and Map updates,DHHS-OPCRH Data,N/A,PRJTASK0644805,N/A,N/A,TRUE,FALSE,,"NON-BILLING - credit of 24 hours (formerly, this was $4,314.52, or 42 hours of Zach's FY25 rate hours, but the difference between estimated and actual in the FY24 project only amounted to 24 hours)"
+,FALSE,,DPU-Public Utilities Map Rebuild,DPU-Public Util,br7666,PRJTASK0644812,SBA,DPR-1049,FALSE,FALSE,,
+,TRUE,,DWQ-UIC Maintenance and Support,DWQ-UIC Mainten,eq7710,PRJTASK0644823,SBA,DPR-1047,FALSE,FALSE,,Ends June 2026
+,FALSE,,DWR-GIS & Tech Support,DWR-GIS & Tech ,nr5085,PRJTASK0644827,SOW,SOW,FALSE,FALSE,,No end date
+,TRUE,,DWR/UDOT-Roadkill Support,DWR/UDOT-Roadki,nr5067a,PRJTASK0644831,SOW,SOW,FALSE,FALSE,,
+,TRUE,,Broadband Support,Broadband Suppo,goeo4120,PRJTASK0645425,SBA,DPR-0935,FALSE,FALSE,,
+,TRUE,,OGM-Forklift to AGOL Maintenance,OGM-Forklift to,nr2000adm,PRJTASK0645428,SBA,DPR-1044,FALSE,FALSE,,Dinged Diane Cruz about it on June 13
+,FALSE,,PLPCO-Tech Support,PLPCO-Tech Supp,nrpladm,PRJTASK0645433,MOU,MOU-0154,FALSE,FALSE,,-
+,FALSE,,SHPO-GIS Tech Support,SHPO-GIS Tech S,cedigshhis,PRJTASK0645437,SOW,SOW,FALSE,FALSE,,
+,FALSE,,UDC-AP&P Field Map,UDC-AP&P Field ,crfoadmin,PRJTASK0646239,SOW,SOW,FALSE,FALSE,,
+,FALSE,,UIPA-Ongoing GIS Support,UIPA-Ongoing GI,nsuipa,PRJTASK0645483,SBA,DPR-1119,FALSE,FALSE,,
+,FALSE,,UTNG-Camp Williams interactive map,UTNG-Camp Willi,ng4083,PRJTASK0645487,SBA,DPR-1088,FALSE,FALSE,,
+,TRUE,,WFRC-Tech Services,WFRC-Tech Servi,nsrcwfrc,PRJTASK0645492,SBA,DPR-1030,FALSE,FALSE,,
+,,,,,,,,,,,,
+,,,DTS UGRC Agency/Org Projects - PRJ0398050,,,,Contract,,,,,
+New,Missing in Vantage,Notes,Task Name,Vantage,ELCID,Task #,Type,Link,Needed,Not Needed,End Date,Notes
+TRUE,FALSE,,BCI-FSH Interactive Map,BCI-FSH Interac,ps2251,PRJTASK0659535,SOW,SOW,FALSE,FALSE,Ongoing,Add contract to SN and create project task with ELCID
+,FALSE,,DEQ - Air Quality TEMPO to AGOL,DEQ - Air Quali,,,N/A,N/A,TRUE,FALSE,,No current contract or ELCID
+FALSE,TRUE,,DEQ-Spills Map Widget,DEQ-Spills Map ,eq1290,PRJTASK0643209,SBA,DPR-1110,FALSE,FALSE,,Calculate remaining budget remaining when creating new task
+FALSE,FALSE,,DEQ-WMRC Solid Waste and Recycling Mapping,DEQ-WMRC Solid ,eq6270,PRJTASK0654114,SOW,SOW,FALSE,FALSE,,"No SOW attached, it may have been for 25K + 20K overage, and will need to calculate remainder. They want to be notified when we're close to the 20K
+
+Add new SOW to SN after it's been signed"
+,FALSE,,DFCM - Leased and Owned Properties,DFCM - Leased a,,,,N/A,TRUE,FALSE,,No current contract or ELCID
+TRUE,FALSE,,DHHS-Naloxone Interactive Map,DHHS-Naloxone I,n/a,PRJTASK0675683,SOW,,FALSE,FALSE,,Added on 1/5/25
+TRUE,FALSE,,DNR-SP Echo Pilot Project,DNR-SP Echo Pil,nr4003,PRJTASK0664541,SOW,SOW,FALSE,FALSE,,
+TRUE,TRUE,,DNR-SP Website Interactive Maps,DNR-SP Website ,nr4003,PRJTASK0701413,SOW,,FALSE,FALSE,,PROJECT: DNR State Parks website interactive maps 	(PRJ0501848)
+FALSE,FALSE,,DWQ-UIP Change Detection,DWQ-UIP Change ,eq7720uip,PRJTASK0643224,SBA,DPR-1064,FALSE,FALSE,,
+FALSE,TRUE,,DWR-EFish bulk uploader enhancement,DWR-EFish bulk ,na,PRJTASK0643329,N/A,N/A,FALSE,TRUE,,"NOT BILLABLE - 98 Hours at FY25 rate, for $11,861.55 billed in FY24"
+FALSE,FALSE,,DWR-EFish ongoing maintenance,DWR-EFish ongoi,nr5038,PRJTASK0643312,SBA,DPR-1045,FALSE,FALSE,,"Replaced last year's DWR - Electrofishing Query App rewrite task. SBA calls for $15K, however, will also add in whatever is left over from the FY25 DWR - Electrofishing mobile app consultation (PRJTASK0615076) task"
+FALSE,FALSE,,DWR-WRI Map Rebuild,DWR-WRI Map Reb,nr5084db,PRJTASK0646244,SBA,DPR-1095,FALSE,FALSE,,"DPR-1095 - This task is for the rebuild, then the ongoing maintenance in FY26+ will use this agreement."
+TRUE,TRUE,,GOEO-Story Map AGOL transfer,GOEO-Story Map ,goeo5120,PRJTASK0666952,SBA,DPR-1129,FALSE,FALSE,,
+TRUE,FALSE,,GOPB-UPP2 ETL,GOPB-UPP2 ETL,gvombspec,PRJTASK0666486,SOW,SOW,FALSE,FALSE,,
+TRUE,FALSE,,GOPB-UPP2 Map,GOPB-UPP2 Map,na,PRJTASK0666495,SOW,SOW,FALSE,FALSE,,
+TRUE,FALSE,,PLPCO-Centerline Description Tool,PLPCO-Centerlin,nrrs2477,PRJTASK0669895,SOW,SOW,FALSE,FALSE,,
+FALSE,FALSE,,PLSS App Review & Approval,PLSS App Review,it6012gps,PRJTASK0643246,N/A,N/A,FALSE,TRUE,,ELCID charges to 6012
+FALSE,FALSE,,UDOT-Travel Demand Model-Households,UDOT-Travel Dem,sr8292b,PRJTASK0643250,SBA,DPR-1115,FALSE,FALSE,,
+TRUE,FALSE,,UETN-AGOL Org Admin & Support,UETN-AGOL Org A,nsuedtn,PRJTASK0666644,SBA,DPR-1132,FALSE,FALSE,,
+TRUE,FALSE,,ULCT Mapping Project - Preliminary Analysis,ULCT Mapping Pr,na,PRJTASK0663364,N/A,,TRUE,FALSE,,replaced with PRJTASK0668166 & PRJTASK0668173
+TRUE,FALSE,,ULCT-General,ULCT-General,nsuclt,PRJTASK0668452,SBA,DPR-1131,FALSE,FALSE,,
+TRUE,FALSE,,ULCT-POP,ULCT-POP,nsuclt,PRJTASK0668173,SBA,DPR-1131,FALSE,FALSE,,
+TRUE,TRUE,,ULCT-Zoning,ULCT-Zoning,nsuclt,PRJTASK0668166,SBA,DPR-1131,FALSE,FALSE,,
+TRUE,FALSE,,UOT - Tourism Interactive Map - Preliminary Work,UOT - Tourism I,na,PRJTASK0665041,N/A,,FALSE,FALSE,,non-billable -replaced with PRJTASK0667916
+TRUE,FALSE,,UOT-Interactive Map - Dev & Support,UOT-Interactive,goeo2160,PRJTASK0667916,SOW,SOW,FALSE,FALSE,,
+,,,,,,,,,,,,
+,,,GO-LGO-Elections Systems Operational Maintenance-FY26 - PRJ0400666,,,,,,,,,
+New,Missing in Vantage,Notes,Task Name,Vantage,ELCID,Task #,Assigned To,,,,,
+,FALSE,,LGO Elec Scott FY26,LGO Elec Scott ,gvvista,PRJTASK0654234,Scott,,,,,
+,FALSE,,LGO Elections Support FY26,LGO Elections S,gvvista,PRJTASK0654236,Steve,,,,,
+,FALSE,,LGO Elec Chris FY26,LGO Elec Chris ,gvvista,PRJTASK0654249,Chris,,,,,
+,FALSE,,LGO Elec Jake FY26,LGO Elec Jake F,gvvista,PRJTASK0654238,Jake,,,,,
+,FALSE,,LGO Elec Rick FY26,LGO Elec Rick F,gvvista,PRJTASK0654240,Rick,,,,,
+,FALSE,,LGO Elec Zach FY26,LGO Elec Zach F,gvvista,PRJTASK0650914,Zach,,,,,
+,TRUE,,LGO Elec Denise FY26,LGO Elec Denise,gvvista,PRJTASK0650911,Denise,,,,,
+,FALSE,,LGO Elec Erik FY26,LGO Elec Erik F,gvvista,PRJTASK0654246,Erik,,,,,
+TRUE,FALSE,,LGO Elec OnCall FY26,LGO Elec OnCall,gvvista,PRJTASK0664896,Erik,,,,,
+,,,,,,,,,,,,
+,,,DTS Database Services Support for UGRC - FY26 - PRJ0408239,,,,,This project was created after the 10/10/25 deadline for the ServiceNow project migration,,,,
+New,Missing in Vantage,Notes,Task Name,Vantage,ELCID,Task #,Assigned To,,,,,
+TRUE,FALSE,,Jeff-UGRC DBA Support FY26,Jeff-UGRC DBA S,it6010agr,PRJTASK0671997,Jeff Howard,,,,,
+TRUE,FALSE,,Robert-UGRC DBA Support FY26,Robert-UGRC DBA,it6010agr,PRJTASK0672001,Robert Smith,,,,,
+TRUE,FALSE,,Lucas-UGRC DBA Support FY26,Lucas-UGRC DBA ,it6010agr,PRJTASK0672004,Lucas Langosh,,,,,
+TRUE,FALSE,,Iching-UGRC DBA Support FY26,Iching-UGRC DBA,it6010agr,PRJTASK0672012,Iching Lin,,,,,
