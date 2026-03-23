@@ -7,11 +7,15 @@ import { loadLookupMap } from "../shared/csv";
 
 const DESCRIPTION_COL_KEY = "adv-description";
 const DESCRIPTION_COL_LABEL = "Description";
-const DAILY_ACTIVITY_QA = "DACT_CD"; // data-qa value for the "Daily Activity" column
+const DAILY_ACTIVITY_QA = "DLY_ACTV_CD"; // data-qa value for the "Daily Activity" column
 
 let lookupMap: Map<string, string> = new Map();
-let currentPrefs: ColumnPrefs = { hidden: [], frozen: [] };
+let currentPrefs: ColumnPrefs = {
+  hidden: [],
+  frozen: [DAILY_ACTIVITY_QA, DESCRIPTION_COL_KEY],
+};
 let hasLoggedMissingGrid = false;
+const warnedMissingTasks = new Set<string>();
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
@@ -27,7 +31,10 @@ async function init() {
       "[ad-vantage] Failed to load column preferences; using defaults.",
       error,
     );
-    currentPrefs = { hidden: [], frozen: [] };
+    currentPrefs = {
+      hidden: [],
+      frozen: [DAILY_ACTIVITY_QA, DESCRIPTION_COL_KEY],
+    };
   }
 
   console.info("[ad-vantage] Initial state ready.", {
@@ -77,9 +84,9 @@ function enhanceGrid(grid: HTMLElement) {
   const headerRow = grid.querySelector<HTMLElement>("thead tr");
   if (!headerRow) return;
 
+  injectDescriptionColumn(grid, headerRow);
   applyColumnVisibility(grid, headerRow);
   applyFrozenColumns(grid, headerRow);
-  injectDescriptionColumn(grid, headerRow);
 }
 
 // ─── Column Visibility ───────────────────────────────────────────────────────
@@ -178,30 +185,31 @@ function setColumnFrozen(grid: HTMLElement, columnIndex: number, left: number) {
 // ─── Description Column ──────────────────────────────────────────────────────
 
 function injectDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
-  // Skip if already injected
-  if (headerRow.querySelector(`[data-qa="${DESCRIPTION_COL_KEY}"]`)) {
-    updateDescriptionCells(grid);
-    return;
-  }
-
-  if (lookupMap.size === 0) return;
-
-  // Add header cell after the Daily Activity column (or at end if not found)
   const dailyActivityTh = headerRow.querySelector<HTMLElement>(
     `th[data-qa="${DAILY_ACTIVITY_QA}"]`,
   );
 
-  const descTh = document.createElement("th");
-  descTh.setAttribute("data-qa", DESCRIPTION_COL_KEY);
-  descTh.setAttribute("role", "columnheader");
-  descTh.setAttribute("scope", "col");
+  let descTh = headerRow.querySelector<HTMLElement>(
+    `th[data-qa="${DESCRIPTION_COL_KEY}"]`,
+  );
+
+  if (!descTh) {
+    descTh = document.createElement("th");
+    descTh.setAttribute("data-qa", DESCRIPTION_COL_KEY);
+    descTh.setAttribute("role", "columnheader");
+    descTh.setAttribute("scope", "col");
+  }
+
   descTh.style.cssText =
     "padding: 4px 8px; white-space: nowrap; font-weight: bold;";
   descTh.textContent = DESCRIPTION_COL_LABEL;
 
   if (dailyActivityTh) {
-    dailyActivityTh.insertAdjacentElement("afterend", descTh);
-  } else {
+    const nextHeader = dailyActivityTh.nextElementSibling;
+    if (nextHeader !== descTh) {
+      headerRow.insertBefore(descTh, nextHeader);
+    }
+  } else if (descTh.parentElement !== headerRow) {
     headerRow.appendChild(descTh);
   }
 
@@ -212,39 +220,63 @@ function updateDescriptionCells(grid: HTMLElement) {
   const headerRow = grid.querySelector<HTMLElement>("thead tr");
   if (!headerRow) return;
 
-  const descThIndex = Array.from(headerRow.children).findIndex(
-    (el) => el.getAttribute("data-qa") === DESCRIPTION_COL_KEY,
-  );
   const dailyActivityIndex = Array.from(headerRow.children).findIndex(
     (el) => el.getAttribute("data-qa") === DAILY_ACTIVITY_QA,
   );
 
-  if (descThIndex === -1 || dailyActivityIndex === -1) return;
+  if (dailyActivityIndex === -1) return;
 
   const bodyRows = grid.querySelectorAll<HTMLElement>("tbody tr");
   bodyRows.forEach((row) => {
-    const cells = Array.from(row.children);
-    const activityCell = cells[dailyActivityIndex] as HTMLElement | undefined;
-    const existingDescCell = cells[descThIndex] as HTMLElement | undefined;
+    const activityCell = row.children[dailyActivityIndex] as
+      | HTMLElement
+      | undefined;
+    if (!activityCell) return;
 
-    const activityValue = activityCell?.textContent?.trim() ?? "";
-    const description = lookupMap.get(activityValue) ?? "";
+    const activityValue = getCellDisplayValue(activityCell);
+    const hasMatch = activityValue.length > 0 && lookupMap.has(activityValue);
+    const description = hasMatch ? (lookupMap.get(activityValue) ?? "") : "";
 
-    if (existingDescCell) {
-      existingDescCell.textContent = description;
-    } else {
-      const td = document.createElement("td");
-      td.textContent = description;
-      td.style.cssText = "padding: 4px 8px; color: #555; font-style: italic;";
-      td.setAttribute("data-qa", DESCRIPTION_COL_KEY);
+    if (activityValue.length > 0 && lookupMap.size > 0 && !hasMatch) {
+      warnMissingTask(activityValue);
+    }
 
-      if (cells[dailyActivityIndex + 1]) {
-        row.insertBefore(td, cells[dailyActivityIndex + 1]);
-      } else {
-        row.appendChild(td);
-      }
+    let descCell = row.querySelector<HTMLElement>(
+      `td[data-qa="${DESCRIPTION_COL_KEY}"]`,
+    );
+
+    if (!descCell) {
+      descCell = document.createElement("td");
+      descCell.setAttribute("data-qa", DESCRIPTION_COL_KEY);
+    }
+
+    descCell.textContent = description;
+    descCell.style.cssText =
+      "padding: 4px 8px; color: #555; font-style: italic;";
+
+    const nextCell = activityCell.nextElementSibling;
+    if (nextCell !== descCell) {
+      row.insertBefore(descCell, nextCell);
     }
   });
+}
+
+function getCellDisplayValue(cell: HTMLElement): string {
+  const input = cell.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+    "input, textarea",
+  );
+  if (input?.value) return input.value.trim();
+
+  return cell.textContent?.trim() ?? "";
+}
+
+function warnMissingTask(taskCode: string) {
+  if (warnedMissingTasks.has(taskCode)) return;
+
+  warnedMissingTasks.add(taskCode);
+  console.warn(
+    `[ad-vantage] No description match found in lookup CSV for task "${taskCode}".`,
+  );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
