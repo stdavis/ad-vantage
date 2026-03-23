@@ -1,4 +1,8 @@
-import { getColumnPrefs, setColumnPrefs, type ColumnPrefs } from '../shared/storage';
+import {
+  getColumnPrefs,
+  setColumnPrefs,
+  type ColumnPrefs,
+} from "../shared/storage";
 
 interface ColumnInfo {
   key: string;
@@ -12,8 +16,8 @@ async function init() {
   prefs = await getColumnPrefs();
   columns = await detectColumnsFromActiveTab();
 
-  const emptyState = document.getElementById('empty-state')!;
-  const columnList = document.getElementById('column-list')!;
+  const emptyState = document.getElementById("empty-state")!;
+  const columnList = document.getElementById("column-list")!;
 
   if (columns.length === 0) {
     emptyState.hidden = false;
@@ -25,7 +29,7 @@ async function init() {
   columnList.hidden = false;
   renderColumnList(columnList);
 
-  document.getElementById('reset-btn')!.addEventListener('click', async () => {
+  document.getElementById("reset-btn")!.addEventListener("click", async () => {
     prefs = { hidden: [], frozen: [] };
     await setColumnPrefs(prefs);
     renderColumnList(columnList);
@@ -33,13 +37,13 @@ async function init() {
 }
 
 function renderColumnList(container: HTMLElement) {
-  container.innerHTML = '';
+  container.innerHTML = "";
   columns.forEach(({ key, label }) => {
     const isVisible = !prefs.hidden.includes(key);
     const isFrozen = prefs.frozen.includes(key);
 
-    const row = document.createElement('div');
-    row.className = 'column-row';
+    const row = document.createElement("div");
+    row.className = "column-row";
 
     row.innerHTML = `
       <span class="column-label" title="${label}">${label}</span>
@@ -47,13 +51,13 @@ function renderColumnList(container: HTMLElement) {
         <div class="control-group">
           <label>Visible</label>
           <label class="toggle">
-            <input type="checkbox" data-key="${key}" data-type="visible" ${isVisible ? 'checked' : ''}/>
+            <input type="checkbox" data-key="${key}" data-type="visible" ${isVisible ? "checked" : ""}/>
             <span class="toggle-track"></span>
           </label>
         </div>
         <div class="control-group">
           <label>Freeze</label>
-          <input type="checkbox" class="freeze-check" data-key="${key}" data-type="freeze" ${isFrozen ? 'checked' : ''}/>
+          <input type="checkbox" class="freeze-check" data-key="${key}" data-type="freeze" ${isFrozen ? "checked" : ""}/>
         </div>
       </div>
     `;
@@ -61,34 +65,38 @@ function renderColumnList(container: HTMLElement) {
     container.appendChild(row);
   });
 
-  container.querySelectorAll<HTMLInputElement>('input[data-type="visible"]').forEach((input) => {
-    input.addEventListener('change', async () => {
-      const key = input.dataset.key!;
-      if (input.checked) {
-        prefs.hidden = prefs.hidden.filter((k) => k !== key);
-      } else {
-        if (!prefs.hidden.includes(key)) prefs.hidden.push(key);
-      }
-      await setColumnPrefs(prefs);
+  container
+    .querySelectorAll<HTMLInputElement>('input[data-type="visible"]')
+    .forEach((input) => {
+      input.addEventListener("change", async () => {
+        const key = input.dataset.key!;
+        if (input.checked) {
+          prefs.hidden = prefs.hidden.filter((k) => k !== key);
+        } else {
+          if (!prefs.hidden.includes(key)) prefs.hidden.push(key);
+        }
+        await setColumnPrefs(prefs);
+      });
     });
-  });
 
-  container.querySelectorAll<HTMLInputElement>('input[data-type="freeze"]').forEach((input) => {
-    input.addEventListener('change', async () => {
-      const key = input.dataset.key!;
-      if (input.checked) {
-        if (!prefs.frozen.includes(key)) prefs.frozen.push(key);
-      } else {
-        prefs.frozen = prefs.frozen.filter((k) => k !== key);
-      }
-      await setColumnPrefs(prefs);
+  container
+    .querySelectorAll<HTMLInputElement>('input[data-type="freeze"]')
+    .forEach((input) => {
+      input.addEventListener("change", async () => {
+        const key = input.dataset.key!;
+        if (input.checked) {
+          if (!prefs.frozen.includes(key)) prefs.frozen.push(key);
+        } else {
+          prefs.frozen = prefs.frozen.filter((k) => k !== key);
+        }
+        await setColumnPrefs(prefs);
+      });
     });
-  });
 }
 
 async function detectColumnsFromActiveTab(): Promise<ColumnInfo[]> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id || !tab.url?.includes('vantage.utah.gov')) return [];
+  if (!tab?.id || !tab.url?.includes("vantage.utah.gov")) return [];
 
   try {
     const results = await chrome.scripting.executeScript({
@@ -96,20 +104,45 @@ async function detectColumnsFromActiveTab(): Promise<ColumnInfo[]> {
       func: () => {
         const grid = document.querySelector('div[role="grid"]');
         if (!grid) return [];
-        const headers = grid.querySelectorAll<HTMLElement>('thead th[role="columnheader"]');
+        const headers = grid.querySelectorAll<HTMLElement>(
+          'thead th[role="columnheader"]',
+        );
         return Array.from(headers)
-          .filter((th) => th.getAttribute('data-qa') !== 'adv-description')
-          .map((th) => ({
-            key: th.getAttribute('data-qa') ?? th.textContent?.trim() ?? '',
-            label:
-              th.querySelector('[data-qa-id$=".headerCellTitle"]')?.textContent?.trim() ??
+          .filter((th) => th.getAttribute("data-qa") !== "adv-description")
+          .map((th) => {
+            const label =
+              th
+                .querySelector('[data-qa-id$=".headerCellTitle"]')
+                ?.textContent?.trim() ??
               th.textContent?.trim() ??
-              '',
-          }))
+              "";
+
+            const dateMatch = label.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
+            const key = dateMatch
+              ? dateMatch[1]
+              : (th.getAttribute("data-qa") ?? label);
+
+            return { key, label };
+          })
           .filter((c) => c.key);
       },
     });
-    return (results?.[0]?.result as ColumnInfo[]) ?? [];
+    const rawColumns = (results?.[0]?.result as ColumnInfo[]) ?? [];
+
+    // Normalize and deduplicate based on the simplified key
+    const seen = new Set<string>();
+    return rawColumns.reduce<ColumnInfo[]>((acc, col) => {
+      if (!seen.has(col.key)) {
+        seen.add(col.key);
+        // Clean up the label for display (e.g. 'Sat 03/14' -> 'Sat')
+        const dateMatch = col.label.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
+        acc.push({
+          key: col.key,
+          label: dateMatch ? dateMatch[1] : col.label,
+        });
+      }
+      return acc;
+    }, []);
   } catch {
     return [];
   }
