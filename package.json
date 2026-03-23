@@ -1,0 +1,17 @@
+{
+  "name": "ad-vantage",
+  "version": "0.1.0",
+  "description": "Chrome extension to enhance the Vantage timesheet app",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.26",
+    "@types/chrome": "^0.0.268",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.13"
+  }
+}

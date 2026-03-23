@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ad-vantage</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>ad-vantage</h1>
+      <p class="subtitle">Vantage Timesheet Enhancer</p>
+    </header>
+
+    <main>
+      <section id="column-list-section">
+        <p class="empty-state" id="empty-state">
+          Open the Vantage timesheet page to detect columns.
+        </p>
+        <div id="column-list" hidden></div>
+      </section>
+    </main>
+
+    <footer>
+      <button id="reset-btn" class="btn-secondary">Reset All Settings</button>
+    </footer>
+
+    <script type="module" src="popup.ts"></script>
+  </body>
+</html>
