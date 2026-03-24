@@ -18,10 +18,20 @@ Chrome extension to enhance the Vantage timesheet app with frozen columns, hidde
    _(or `yarn install` / `pnpm install` depending on your package manager)_
 
 2. **Start the development server:**
+
    ```bash
    npm run dev
    ```
+
    This starts the Vite dev server with Hot Module Replacement (HMR) via `@crxjs/vite-plugin`. The dev extension files are written to the `dist-dev` folder and expect `http://localhost:5173` to remain running.
+
+3. **Launch the dedicated debug browser:**
+
+   ```bash
+   npm run chrome:dev
+   ```
+
+   This opens Google Chrome Dev and enables the remote debugging port on `http://127.0.0.1:9223`. Keep this browser open while working with MCP-based browser inspection.
 
 ## Load the Extension in Chrome
 
@@ -33,6 +43,27 @@ Chrome extension to enhance the Vantage timesheet app with frozen columns, hidde
    For a normal unpacked extension that does not depend on the Vite dev server, load `dist` after running `npm run build`.
 
 When using `dist-dev`, Vite updates the files automatically while the dev server is running, and changes are reflected in the browser after refresh.
+
+## MCP Browser Debugging
+
+Use Chrome Dev for browser automation and inspection instead of your normal Chrome session.
+
+1. Run `npm run chrome:dev`.
+2. In that Chrome Dev window, open `chrome://extensions/`.
+3. Enable **Developer mode**.
+4. Load the unpacked extension from `dist-dev` while `npm run dev` is running, or `dist` after `npm run build`.
+5. Log in to `https://vantage.utah.gov/` in that same Chrome Dev window.
+6. Reload VS Code after the browser is running so the MCP server in `.vscode/mcp.json` can connect.
+
+You can verify the Chrome Dev remote debugging endpoint with:
+
+```bash
+curl http://127.0.0.1:9223/json/version
+```
+
+If the endpoint returns JSON, VS Code should be able to attach to the browser through the configured Chrome DevTools MCP server.
+
+Without `--user-data-dir`, Chrome Dev will use its default profile. That is simpler, but if Chrome Dev is already running without the remote debugging flag, macOS may reuse the existing instance and ignore the new launch arguments. If that happens, quit Chrome Dev and run `npm run chrome:dev` again.
 
 ## Usage
 

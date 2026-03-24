@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "chrome:dev": "open -na \"Google Chrome Dev\" --args --remote-debugging-port=9223 --user-data-dir=\"$HOME/.ad-vantage-chrome-dev\""
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.26",
