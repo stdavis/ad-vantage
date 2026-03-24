@@ -91,6 +91,7 @@ function enhanceGrid(grid: HTMLElement) {
   const headerRow = grid.querySelector<HTMLElement>("thead tr");
   if (!headerRow) return;
 
+  prepareGridForFrozenColumns(grid);
   syncDescriptionColumn(grid, headerRow);
   applyColumnVisibility(grid, headerRow);
   applyFrozenColumns(grid, headerRow);
@@ -150,8 +151,10 @@ function applyFrozenColumns(grid: HTMLElement, headerRow: HTMLElement) {
   grid.querySelectorAll<HTMLElement>(".adv-frozen").forEach((cell) => {
     cell.style.removeProperty("position");
     cell.style.removeProperty("left");
+    cell.style.removeProperty("top");
     cell.style.removeProperty("z-index");
     cell.style.removeProperty("background");
+    cell.style.removeProperty("background-color");
     cell.classList.remove("adv-frozen");
   });
 
@@ -174,11 +177,7 @@ function applyFrozenColumns(grid: HTMLElement, headerRow: HTMLElement) {
   });
 }
 
-function setColumnFrozen(
-  grid: HTMLElement,
-  columnIndex: number,
-  left: number,
-) {
+function setColumnFrozen(grid: HTMLElement, columnIndex: number, left: number) {
   const rows = grid.querySelectorAll<HTMLElement>("thead tr, tbody tr");
 
   rows.forEach((row) => {
@@ -187,10 +186,32 @@ function setColumnFrozen(
 
     cell.style.position = "sticky";
     cell.style.left = `${left}px`;
-    cell.style.zIndex = cell.tagName === "TH" ? "11" : "10";
-    cell.style.background = "inherit";
+    cell.style.zIndex = cell.tagName === "TH" ? "3" : "1";
+    cell.style.backgroundColor = getStickyCellBackground(cell, row, grid);
     cell.classList.add("adv-frozen");
   });
+}
+
+function prepareGridForFrozenColumns(grid: HTMLElement) {
+  grid.style.position = "relative";
+  grid.style.isolation = "isolate";
+}
+
+function getStickyCellBackground(
+  cell: HTMLElement,
+  row: HTMLElement,
+  grid: HTMLElement,
+): string {
+  const backgrounds = [cell, row, grid, document.body];
+
+  for (const element of backgrounds) {
+    const backgroundColor = window.getComputedStyle(element).backgroundColor;
+    if (backgroundColor && backgroundColor !== "rgba(0, 0, 0, 0)") {
+      return backgroundColor;
+    }
+  }
+
+  return "#fff";
 }
 
 // ─── Description Column ──────────────────────────────────────────────────────
@@ -224,7 +245,10 @@ function syncDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
   updateDescriptionCells(grid, getColumnIndex(descTh));
 }
 
-function updateDescriptionCells(grid: HTMLElement, descriptionColumnIndex: number) {
+function updateDescriptionCells(
+  grid: HTMLElement,
+  descriptionColumnIndex: number,
+) {
   const bodyRows = grid.querySelectorAll<HTMLElement>("tbody tr");
   bodyRows.forEach((row) => {
     let descCell = row.querySelector<HTMLElement>(
