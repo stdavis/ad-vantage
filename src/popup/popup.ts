@@ -12,6 +12,8 @@ interface ColumnInfo {
 const DESCRIPTION_COL_KEY = "adv-description";
 const DESCRIPTION_COL_LABEL = "Description";
 const DAILY_ACTIVITY_QA = "DLY_ACTV_CD";
+const MODAL_ANCESTOR_SELECTOR =
+  '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
 
 let prefs: ColumnPrefs = {
   hidden: [],
@@ -124,9 +126,14 @@ async function detectColumnsFromActiveTab(): Promise<ColumnInfo[]> {
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: () => {
-        const grid = document.querySelector('div[role="grid"]');
+      args: [MODAL_ANCESTOR_SELECTOR],
+      func: (modalAncestorSelector) => {
+        const grid = Array.from(
+          document.querySelectorAll<HTMLElement>('div[role="grid"]'),
+        ).find((candidate) => !candidate.closest(modalAncestorSelector));
+
         if (!grid) return [];
+
         const headers = grid.querySelectorAll<HTMLElement>(
           'thead th[role="columnheader"]',
         );

@@ -8,6 +8,8 @@ import { loadLookupMap } from "../shared/csv";
 const DESCRIPTION_COL_KEY = "adv-description";
 const DESCRIPTION_COL_LABEL = "Description";
 const DAILY_ACTIVITY_QA = "DLY_ACTV_CD"; // data-qa value for the "Daily Activity" column
+const MODAL_ANCESTOR_SELECTOR =
+  '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
 
 let lookupMap: Map<string, string> = new Map();
 let currentPrefs: ColumnPrefs = {
@@ -59,7 +61,10 @@ async function init() {
 function applyEnhancements() {
   mutationObserver?.disconnect();
   try {
-    const grids = document.querySelectorAll<HTMLElement>('div[role="grid"]');
+    const grids = Array.from(
+      document.querySelectorAll<HTMLElement>('div[role="grid"]'),
+    ).filter(isEnhanceableGrid);
+
     if (grids.length === 0) {
       if (!hasLoggedMissingGrid) {
         console.info(
@@ -81,12 +86,18 @@ function applyEnhancements() {
 }
 
 function enhanceGrid(grid: HTMLElement) {
+  if (!isEnhanceableGrid(grid)) return;
+
   const headerRow = grid.querySelector<HTMLElement>("thead tr");
   if (!headerRow) return;
 
   injectDescriptionColumn(grid, headerRow);
   applyColumnVisibility(grid, headerRow);
   applyFrozenColumns(grid, headerRow);
+}
+
+function isEnhanceableGrid(grid: HTMLElement): boolean {
+  return !grid.closest(MODAL_ANCESTOR_SELECTOR);
 }
 
 // ─── Column Visibility ───────────────────────────────────────────────────────
