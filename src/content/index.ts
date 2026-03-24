@@ -91,7 +91,7 @@ function enhanceGrid(grid: HTMLElement) {
   const headerRow = grid.querySelector<HTMLElement>("thead tr");
   if (!headerRow) return;
 
-  injectDescriptionColumn(grid, headerRow);
+  syncDescriptionColumn(grid, headerRow);
   applyColumnVisibility(grid, headerRow);
   applyFrozenColumns(grid, headerRow);
 }
@@ -130,9 +130,7 @@ function setColumnHidden(
   const rows = grid.querySelectorAll<HTMLElement>("thead tr, tbody tr");
 
   rows.forEach((row) => {
-    const cell = Array.from(row.children)[columnIndex - 1] as
-      | HTMLElement
-      | undefined;
+    const cell = getRowCell(row, columnIndex);
     if (!cell) return;
 
     if (hidden) {
@@ -176,13 +174,15 @@ function applyFrozenColumns(grid: HTMLElement, headerRow: HTMLElement) {
   });
 }
 
-function setColumnFrozen(grid: HTMLElement, columnIndex: number, left: number) {
+function setColumnFrozen(
+  grid: HTMLElement,
+  columnIndex: number,
+  left: number,
+) {
   const rows = grid.querySelectorAll<HTMLElement>("thead tr, tbody tr");
 
   rows.forEach((row) => {
-    const cell = Array.from(row.children)[columnIndex - 1] as
-      | HTMLElement
-      | undefined;
+    const cell = getRowCell(row, columnIndex);
     if (!cell) return;
 
     cell.style.position = "sticky";
@@ -195,10 +195,11 @@ function setColumnFrozen(grid: HTMLElement, columnIndex: number, left: number) {
 
 // ─── Description Column ──────────────────────────────────────────────────────
 
-function injectDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
+function syncDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
   const dailyActivityTh = headerRow.querySelector<HTMLElement>(
     `th[data-qa="${DAILY_ACTIVITY_QA}"]`,
   );
+  if (!dailyActivityTh) return;
 
   let descTh = headerRow.querySelector<HTMLElement>(
     `th[data-qa="${DESCRIPTION_COL_KEY}"]`,
@@ -215,43 +216,17 @@ function injectDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
     "padding: 4px 8px; white-space: nowrap; font-weight: bold;";
   descTh.textContent = DESCRIPTION_COL_LABEL;
 
-  if (dailyActivityTh) {
-    const nextHeader = dailyActivityTh.nextElementSibling;
-    if (nextHeader !== descTh) {
-      headerRow.insertBefore(descTh, nextHeader);
-    }
-  } else if (descTh.parentElement !== headerRow) {
-    headerRow.appendChild(descTh);
+  const nextHeader = dailyActivityTh.nextElementSibling;
+  if (nextHeader !== descTh) {
+    headerRow.insertBefore(descTh, nextHeader);
   }
 
-  updateDescriptionCells(grid);
+  updateDescriptionCells(grid, getColumnIndex(descTh));
 }
 
-function updateDescriptionCells(grid: HTMLElement) {
-  const headerRow = grid.querySelector<HTMLElement>("thead tr");
-  if (!headerRow) return;
-
-  const dailyActivityIndex = Array.from(headerRow.children).findIndex(
-    (el) => el.getAttribute("data-qa") === DAILY_ACTIVITY_QA,
-  );
-
-  if (dailyActivityIndex === -1) return;
-
+function updateDescriptionCells(grid: HTMLElement, descriptionColumnIndex: number) {
   const bodyRows = grid.querySelectorAll<HTMLElement>("tbody tr");
   bodyRows.forEach((row) => {
-    const activityCell = row.children[dailyActivityIndex] as
-      | HTMLElement
-      | undefined;
-    if (!activityCell) return;
-
-    const activityValue = getCellDisplayValue(activityCell);
-    const hasMatch = activityValue.length > 0 && lookupMap.has(activityValue);
-    const description = hasMatch ? (lookupMap.get(activityValue) ?? "") : "";
-
-    if (activityValue.length > 0 && lookupMap.size > 0 && !hasMatch) {
-      warnMissingTask(activityValue);
-    }
-
     let descCell = row.querySelector<HTMLElement>(
       `td[data-qa="${DESCRIPTION_COL_KEY}"]`,
     );
@@ -259,16 +234,28 @@ function updateDescriptionCells(grid: HTMLElement) {
     if (!descCell) {
       descCell = document.createElement("td");
       descCell.setAttribute("data-qa", DESCRIPTION_COL_KEY);
+    } else if (descCell.parentElement === row) {
+      row.removeChild(descCell);
+    }
+
+    const activityCell = row.children[descriptionColumnIndex - 2] as
+      | HTMLElement
+      | undefined;
+
+    const activityValue = activityCell ? getCellDisplayValue(activityCell) : "";
+    const hasMatch = activityValue.length > 0 && lookupMap.has(activityValue);
+    const description = hasMatch ? (lookupMap.get(activityValue) ?? "") : "";
+
+    if (activityValue.length > 0 && lookupMap.size > 0 && !hasMatch) {
+      warnMissingTask(activityValue);
     }
 
     descCell.textContent = description;
     descCell.style.cssText =
       "padding: 4px 8px; color: #555; font-style: italic;";
 
-    const nextCell = activityCell.nextElementSibling;
-    if (nextCell !== descCell) {
-      row.insertBefore(descCell, nextCell);
-    }
+    const nextCell = row.children[descriptionColumnIndex - 1] ?? null;
+    row.insertBefore(descCell, nextCell);
   });
 }
 
@@ -354,6 +341,17 @@ function getColumnIndex(th: HTMLElement): number {
   return Array.from(th.parentElement!.children).indexOf(th) + 1;
 }
 
+function getRowCell(
+  row: HTMLElement,
+  columnIndex: number,
+): HTMLElement | undefined {
+  if (columnIndex < 1 || row.children.length < columnIndex) {
+    return undefined;
+  }
+
+  return row.children[columnIndex - 1] as HTMLElement | undefined;
+}
+
 // ─── MutationObserver ────────────────────────────────────────────────────────
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -362,7 +360,12 @@ let mutationObserver: MutationObserver | null = null;
 function observeMutations() {
   mutationObserver = new MutationObserver(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(applyEnhancements, 300);
+    debounceTimer = setTimeout(() => {
+      applyEnhancements();
+      window.requestAnimationFrame(() => {
+        applyEnhancements();
+      });
+    }, 300);
   });
 
   mutationObserver.observe(document.body, {
