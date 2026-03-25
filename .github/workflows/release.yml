@@ -29,10 +29,10 @@ jobs:
           release-type: node
           extra-files: manifest.json
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          github-app-id: ${{ secrets.UGRC_RELEASE_BOT_APP_ID }}
+          github-app-id: ${{ vars.UGRC_RELEASE_BOT_APP_ID }}
           github-app-key: ${{ secrets.UGRC_RELEASE_BOT_APP_KEY }}
-          github-app-name: ${{ secrets.UGRC_RELEASE_BOT_NAME }}
-          github-app-email: ${{ secrets.UGRC_RELEASE_BOT_EMAIL }}
+          github-app-name: ${{ vars.UGRC_RELEASE_BOT_NAME }}
+          github-app-email: ${{ vars.UGRC_RELEASE_BOT_EMAIL }}
 
   publish-artifact:
     name: Publish extension artifact
