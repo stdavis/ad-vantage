@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      released_version: ${{ steps.release.outputs.released_version }}
+
+    steps:
+      - id: release
+        uses: agrc/release-composite-action@v1
+        with:
+          prerelease: ${{ github.ref_name == 'dev' }}
+          release-type: node
+          extra-files: manifest.json
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          github-app-id: ${{ secrets.UGRC_RELEASE_BOT_APP_ID }}
+          github-app-key: ${{ secrets.UGRC_RELEASE_BOT_APP_KEY }}
+          github-app-name: ${{ secrets.UGRC_RELEASE_BOT_NAME }}
+          github-app-email: ${{ secrets.UGRC_RELEASE_BOT_EMAIL }}
+
+  publish-artifact:
+    name: Publish extension artifact
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'yes' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out released commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production extension
+        run: npm run build
+
+      - name: Package extension
+        env:
+          RELEASE_VERSION: ${{ needs.release.outputs.released_version }}
+        run: |
+          archive="ad-vantage-v${RELEASE_VERSION}.zip"
+          cd dist
+          zip -r "../${archive}" .
+          echo "ARCHIVE_NAME=${archive}" >> "$GITHUB_ENV"
+
+      - name: Upload extension archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.release.outputs.released_version }}
+        run: gh release upload "v${RELEASE_VERSION}" "$ARCHIVE_NAME" --clobber

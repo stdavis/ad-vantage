@@ -82,3 +82,23 @@ npm run build
 This will bundle and minify the extension into the `dist` folder, ready to be packaged as a `.zip` for the Chrome Web Store or distributed locally.
 
 If Chrome shows errors about `localhost:5173`, remove the unpacked extension and reload it from `dist` after running `npm run build`.
+
+## Releases
+
+Releases are cut with `agrc/release-composite-action` from GitHub Actions.
+
+- Pushes to `dev` create or update prerelease PRs and prerelease tags.
+- Pushes to `main` create or update stable release PRs and stable tags.
+- When a release PR is merged, GitHub publishes a release and uploads a built extension archive from `dist`.
+
+The release workflow uses conventional commits to determine the next version and changelog entries.
+
+- `feat`: minor release
+- `fix`: patch release
+- `docs`: patch release
+- `style`: patch release
+- `deps`: patch release
+
+Prefer squash merges so the merged PR title becomes the release note entry seen by `release-please`.
+
+The workflow also bumps the extension version in both `package.json` and `manifest.json`, so those files should not be edited manually just to cut a release.
