@@ -88,13 +88,16 @@ function applyEnhancements() {
 function enhanceGrid(grid: HTMLElement) {
   if (!isEnhanceableGrid(grid)) return;
 
-  const headerRow = grid.querySelector<HTMLElement>("thead tr");
-  if (!headerRow) return;
+  const headerRows = getHeaderRows(grid);
+  const mainHeaderRow = getMainHeaderRow(grid);
+  const layoutHeaderRow = headerRows[0];
+
+  if (!layoutHeaderRow || !mainHeaderRow) return;
 
   prepareGridForFrozenColumns(grid);
-  syncDescriptionColumn(grid, headerRow);
-  applyColumnVisibility(grid, headerRow);
-  applyFrozenColumns(grid, headerRow);
+  syncDescriptionColumns(grid, headerRows, mainHeaderRow);
+  applyColumnVisibility(grid, layoutHeaderRow);
+  applyFrozenColumns(grid, layoutHeaderRow);
 }
 
 function isEnhanceableGrid(grid: HTMLElement): boolean {
@@ -216,11 +219,34 @@ function getStickyCellBackground(
 
 // ─── Description Column ──────────────────────────────────────────────────────
 
-function syncDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
+function syncDescriptionColumns(
+  grid: HTMLElement,
+  headerRows: HTMLElement[],
+  mainHeaderRow: HTMLElement,
+) {
+  let descriptionColumnIndex = -1;
+
+  headerRows.forEach((headerRow) => {
+    const descTh = syncDescriptionHeaderCell(headerRow);
+    if (!descTh) return;
+
+    if (headerRow === mainHeaderRow) {
+      descriptionColumnIndex = getColumnIndex(descTh);
+    }
+  });
+
+  if (descriptionColumnIndex !== -1) {
+    updateDescriptionCells(grid, descriptionColumnIndex);
+  }
+}
+
+function syncDescriptionHeaderCell(
+  headerRow: HTMLElement,
+): HTMLElement | undefined {
   const dailyActivityTh = headerRow.querySelector<HTMLElement>(
     `th[data-qa="${DAILY_ACTIVITY_QA}"]`,
   );
-  if (!dailyActivityTh) return;
+  if (!dailyActivityTh) return undefined;
 
   let descTh = headerRow.querySelector<HTMLElement>(
     `th[data-qa="${DESCRIPTION_COL_KEY}"]`,
@@ -242,7 +268,7 @@ function syncDescriptionColumn(grid: HTMLElement, headerRow: HTMLElement) {
     headerRow.insertBefore(descTh, nextHeader);
   }
 
-  updateDescriptionCells(grid, getColumnIndex(descTh));
+  return descTh;
 }
 
 function updateDescriptionCells(
@@ -251,6 +277,11 @@ function updateDescriptionCells(
 ) {
   const bodyRows = grid.querySelectorAll<HTMLElement>("tbody tr");
   bodyRows.forEach((row) => {
+    if (isSummaryRow(row)) {
+      syncSummaryDescriptionCell(row, descriptionColumnIndex);
+      return;
+    }
+
     let descCell = row.querySelector<HTMLElement>(
       `td[data-qa="${DESCRIPTION_COL_KEY}"]`,
     );
@@ -281,6 +312,43 @@ function updateDescriptionCells(
     const nextCell = row.children[descriptionColumnIndex - 1] ?? null;
     row.insertBefore(descCell, nextCell);
   });
+}
+
+function isSummaryRow(row: HTMLElement): boolean {
+  return Array.from(row.children).some((cell) => {
+    if (!(cell instanceof HTMLTableCellElement)) return false;
+    if (cell.colSpan > 1) return true;
+
+    const text = cell.textContent?.trim() ?? "";
+    return text === "Total Hours";
+  });
+}
+
+function syncSummaryDescriptionCell(
+  row: HTMLElement,
+  descriptionColumnIndex: number,
+) {
+  let descCell = row.querySelector<HTMLTableCellElement>(
+    `td[data-qa="${DESCRIPTION_COL_KEY}"]`,
+  );
+
+  if (!descCell) {
+    descCell = document.createElement("td");
+    descCell.setAttribute("data-qa", DESCRIPTION_COL_KEY);
+
+    const nextCell = getRowCell(row, descriptionColumnIndex);
+    if (nextCell?.parentElement === row) {
+      descCell.className = nextCell.className;
+      row.insertBefore(descCell, nextCell);
+    } else {
+      const fallbackCell = row.lastElementChild;
+      descCell.className =
+        fallbackCell instanceof HTMLElement ? fallbackCell.className : "";
+      row.appendChild(descCell);
+    }
+  }
+
+  descCell.textContent = "";
 }
 
 function getCellDisplayValue(cell: HTMLElement): string {
@@ -347,6 +415,14 @@ function getColumnHeaders(headerRow: HTMLElement): HTMLElement[] {
   return Array.from(headerRow.querySelectorAll<HTMLElement>("th"));
 }
 
+function getHeaderRows(grid: HTMLElement): HTMLElement[] {
+  return Array.from(grid.querySelectorAll<HTMLElement>("thead tr"));
+}
+
+function getMainHeaderRow(grid: HTMLElement): HTMLElement | null {
+  return grid.querySelector<HTMLElement>('table[data-qa="tableGrid"] thead tr');
+}
+
 function getColumnKey(th: HTMLElement): string {
   const titleEl = th.querySelector(
     '[data-qa-id$=".headerCellTitle"]',
@@ -369,11 +445,28 @@ function getRowCell(
   row: HTMLElement,
   columnIndex: number,
 ): HTMLElement | undefined {
-  if (columnIndex < 1 || row.children.length < columnIndex) {
+  if (columnIndex < 1) {
     return undefined;
   }
 
-  return row.children[columnIndex - 1] as HTMLElement | undefined;
+  let currentColumn = 1;
+
+  for (const child of Array.from(row.children)) {
+    if (!(child instanceof HTMLElement)) continue;
+
+    const span =
+      child instanceof HTMLTableCellElement && child.colSpan > 0
+        ? child.colSpan
+        : 1;
+
+    if (columnIndex >= currentColumn && columnIndex < currentColumn + span) {
+      return child;
+    }
+
+    currentColumn += span;
+  }
+
+  return undefined;
 }
 
 // ─── MutationObserver ────────────────────────────────────────────────────────
