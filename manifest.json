@@ -3,15 +3,23 @@
   "name": "ad-vantage",
   "version": "1.0.0",
   "description": "Enhances the Vantage timesheet table with frozen columns, hidden columns, and an optional uploaded description lookup column.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
   "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "ad-vantage"
   },
   "content_scripts": [
     {
-      "matches": ["https://vantage.utah.gov/*"],
-      "js": ["src/content/index.ts"]
+      "matches": [
+        "https://vantage.utah.gov/*"
+      ],
+      "js": [
+        "src/content/index.ts"
+      ]
     }
   ]
 }
