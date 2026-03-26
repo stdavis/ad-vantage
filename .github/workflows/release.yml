@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_VERSION: ${{ github.event.release.tag_name }}
 
     steps:
       - name: Check out released commit
@@ -30,10 +32,8 @@ jobs:
         run: npm run build
 
       - name: Package extension
-        env:
-          RELEASE_VERSION: ${{ github.event.release.tag_name }}
         run: |
-          archive="ad-vantage-v${RELEASE_VERSION}.zip"
+          archive="ad-vantage-${RELEASE_VERSION}.zip"
           cd dist
           zip -r "../${archive}" .
           echo "ARCHIVE_NAME=${archive}" >> "$GITHUB_ENV"
@@ -41,5 +41,4 @@ jobs:
       - name: Upload extension archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{ github.event.release.tag_name }}
-        run: gh release upload "v${RELEASE_VERSION}" "$ARCHIVE_NAME" --clobber
+        run: gh release upload "${RELEASE_VERSION}" "$ARCHIVE_NAME" --clobber
