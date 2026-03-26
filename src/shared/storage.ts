@@ -3,6 +3,13 @@ export interface ColumnPrefs {
   frozen: string[];
 }
 
+export interface LookupDataRecord {
+  entries: Array<[string, string]>;
+  fileName: string;
+  entryCount: number;
+  uploadedAt: string;
+}
+
 interface StoredColumnPrefs extends ColumnPrefs {
   schemaVersion?: number;
 }
@@ -12,6 +19,7 @@ const DAILY_ACTIVITY_QA = "DLY_ACTV_CD";
 const LEGACY_DAILY_ACTIVITY_QA = "DACT_CD";
 const PREFS_KEY = "columnPrefs";
 const PREFS_SCHEMA_VERSION = 3;
+const LOOKUP_DATA_KEY = "lookupData";
 
 const DEFAULT_COLUMN_PREFS: ColumnPrefs = {
   hidden: [],
@@ -123,6 +131,42 @@ export function onColumnPrefsChanged(
             shouldMigrateLegacyPrefs(nextPrefs),
         }),
       );
+    }
+  });
+}
+
+export async function getLookupData(): Promise<LookupDataRecord | null> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(LOOKUP_DATA_KEY, (result) => {
+      const lookupData = result[LOOKUP_DATA_KEY] as
+        | LookupDataRecord
+        | undefined;
+      resolve(lookupData ?? null);
+    });
+  });
+}
+
+export async function setLookupData(data: LookupDataRecord): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [LOOKUP_DATA_KEY]: data }, resolve);
+  });
+}
+
+export async function clearLookupData(): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.remove(LOOKUP_DATA_KEY, resolve);
+  });
+}
+
+export function onLookupDataChanged(
+  callback: (lookupData: LookupDataRecord | null) => void,
+): void {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && LOOKUP_DATA_KEY in changes) {
+      const nextLookupData = changes[LOOKUP_DATA_KEY].newValue as
+        | LookupDataRecord
+        | undefined;
+      callback(nextLookupData ?? null);
     }
   });
 }

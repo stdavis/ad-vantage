@@ -1,23 +1,49 @@
+import { getLookupData, type LookupDataRecord } from "./storage";
+
 /**
- * Fetches the bundled lookup CSV and builds a map from Task# → Vantage description.
+ * Loads persisted lookup data and builds a map from Task# → Vantage description.
  */
 export async function loadLookupMap(): Promise<Map<string, string>> {
-  const url = chrome.runtime.getURL("data/lookup.csv");
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const text = await response.text();
-    return parseCsv(text);
+    const lookupData = await getLookupData();
+    return deserializeLookupMap(lookupData);
   } catch (error) {
     console.warn(
-      "[ad-vantage] Failed to load lookup CSV; continuing without description column.",
-      { url, error },
+      "[ad-vantage] Failed to load saved lookup data; continuing without description column.",
+      { error },
     );
     return new Map();
   }
+}
+
+export function serializeLookupMap(
+  lookupMap: Map<string, string>,
+  fileName: string,
+): LookupDataRecord {
+  return {
+    entries: Array.from(lookupMap.entries()),
+    fileName,
+    entryCount: lookupMap.size,
+    uploadedAt: new Date().toISOString(),
+  };
+}
+
+export function deserializeLookupMap(
+  lookupData: LookupDataRecord | null | undefined,
+): Map<string, string> {
+  if (!lookupData || !Array.isArray(lookupData.entries)) {
+    return new Map();
+  }
+
+  const entries = lookupData.entries.filter(
+    (entry): entry is [string, string] =>
+      Array.isArray(entry) &&
+      entry.length === 2 &&
+      typeof entry[0] === "string" &&
+      typeof entry[1] === "string",
+  );
+
+  return new Map(entries);
 }
 
 export function parseCsv(text: string): Map<string, string> {

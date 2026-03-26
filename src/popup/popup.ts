@@ -1,8 +1,13 @@
 import {
+  clearLookupData,
   getColumnPrefs,
+  getLookupData,
+  setLookupData,
   setColumnPrefs,
   type ColumnPrefs,
+  type LookupDataRecord,
 } from "../shared/storage";
+import { parseCsv, serializeLookupMap } from "../shared/csv";
 
 interface ColumnInfo {
   key: string;
@@ -20,23 +25,81 @@ let prefs: ColumnPrefs = {
   frozen: [DAILY_ACTIVITY_QA, DESCRIPTION_COL_KEY],
 };
 let columns: ColumnInfo[] = [];
+let lookupData: LookupDataRecord | null = null;
 
 async function init() {
-  prefs = await getColumnPrefs();
-  columns = await detectColumnsFromActiveTab();
+  const [nextPrefs, nextColumns, nextLookupData] = await Promise.all([
+    getColumnPrefs(),
+    detectColumnsFromActiveTab(),
+    getLookupData(),
+  ]);
+
+  prefs = nextPrefs;
+  columns = nextColumns;
+  lookupData = nextLookupData;
 
   const emptyState = document.getElementById("empty-state")!;
   const columnList = document.getElementById("column-list")!;
+  const lookupFileInput = document.getElementById(
+    "lookup-file",
+  ) as HTMLInputElement;
+  const uploadButton = document.getElementById(
+    "upload-btn",
+  ) as HTMLButtonElement;
+  const clearLookupButton = document.getElementById(
+    "clear-lookup-btn",
+  ) as HTMLButtonElement;
+
+  renderLookupSummary();
+
+  lookupFileInput.addEventListener("change", () => {
+    uploadButton.disabled = !lookupFileInput.files?.length;
+    setLookupStatus("");
+  });
+
+  uploadButton.addEventListener("click", async () => {
+    const file = lookupFileInput.files?.[0];
+    if (!file) {
+      setLookupStatus("Choose a CSV file to upload.", "error");
+      return;
+    }
+
+    const text = await file.text();
+    const parsedLookup = parseCsv(text);
+
+    if (parsedLookup.size === 0) {
+      setLookupStatus(
+        "The CSV did not contain any valid Task# or Vantage lookup rows.",
+        "error",
+      );
+      return;
+    }
+
+    lookupData = serializeLookupMap(parsedLookup, file.name);
+    await setLookupData(lookupData);
+    renderLookupSummary();
+    setLookupStatus(`Uploaded ${lookupData.entryCount} lookup entries.`);
+    lookupFileInput.value = "";
+    uploadButton.disabled = true;
+  });
+
+  clearLookupButton.addEventListener("click", async () => {
+    await clearLookupData();
+    lookupData = null;
+    lookupFileInput.value = "";
+    uploadButton.disabled = true;
+    renderLookupSummary();
+    setLookupStatus("Cleared uploaded lookup data.");
+  });
 
   if (columns.length === 0) {
     emptyState.hidden = false;
     columnList.hidden = true;
-    return;
+  } else {
+    emptyState.hidden = true;
+    columnList.hidden = false;
+    renderColumnList(columnList);
   }
-
-  emptyState.hidden = true;
-  columnList.hidden = false;
-  renderColumnList(columnList);
 
   document.getElementById("reset-btn")!.addEventListener("click", async () => {
     prefs = {
@@ -46,6 +109,35 @@ async function init() {
     await setColumnPrefs(prefs);
     renderColumnList(columnList);
   });
+}
+
+function renderLookupSummary() {
+  const summary = document.getElementById("lookup-summary")!;
+  const clearLookupButton = document.getElementById(
+    "clear-lookup-btn",
+  ) as HTMLButtonElement;
+
+  if (!lookupData) {
+    summary.textContent =
+      "No CSV uploaded. The Description column will stay blank.";
+    clearLookupButton.disabled = true;
+    return;
+  }
+
+  const uploadedAt = new Date(lookupData.uploadedAt).toLocaleString();
+  summary.textContent = `${lookupData.fileName} loaded with ${lookupData.entryCount} entries. Updated ${uploadedAt}.`;
+  clearLookupButton.disabled = false;
+}
+
+function setLookupStatus(message: string, state: "info" | "error" = "info") {
+  const status = document.getElementById("lookup-status")!;
+  status.textContent = message;
+  if (message.length === 0) {
+    status.removeAttribute("data-state");
+    return;
+  }
+
+  status.setAttribute("data-state", state);
 }
 
 function renderColumnList(container: HTMLElement) {

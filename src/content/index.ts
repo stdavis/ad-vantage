@@ -1,6 +1,7 @@
 import {
   getColumnPrefs,
   onColumnPrefsChanged,
+  onLookupDataChanged,
   type ColumnPrefs,
 } from "../shared/storage";
 import { loadLookupMap } from "../shared/csv";
@@ -51,6 +52,19 @@ async function init() {
     currentPrefs = prefs;
     console.info("[ad-vantage] Column preferences changed.", prefs);
     applyEnhancements();
+  });
+
+  onLookupDataChanged(async () => {
+    try {
+      lookupMap = await loadLookupMap();
+      warnedMissingTasks.clear();
+      console.info("[ad-vantage] Lookup data changed.", {
+        lookupEntries: lookupMap.size,
+      });
+      applyEnhancements();
+    } catch (error) {
+      console.warn("[ad-vantage] Failed to refresh lookup data.", error);
+    }
   });
 
   observeMutations();
@@ -365,7 +379,7 @@ function warnMissingTask(taskCode: string) {
 
   warnedMissingTasks.add(taskCode);
   console.warn(
-    `[ad-vantage] No description match found in lookup CSV for task "${taskCode}".`,
+    `[ad-vantage] No description match found in uploaded lookup data for task "${taskCode}".`,
   );
 }
 

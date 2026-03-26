@@ -12,8 +12,37 @@
       <p class="subtitle">Vantage Timesheet Enhancer</p>
     </header>
 
-    <main>
+    <main id="main-content">
+      <section class="lookup-section" aria-labelledby="lookup-heading">
+        <div class="section-heading">
+          <h2 id="lookup-heading">Description Lookup</h2>
+          <p class="section-copy">
+            Upload an optional CSV to populate the Description column.
+          </p>
+        </div>
+
+        <label class="file-label" for="lookup-file">CSV file</label>
+        <input id="lookup-file" type="file" accept=".csv,text/csv" />
+        <p class="lookup-requirements" id="lookup-requirements">
+          Required columns: <strong>Task#</strong> or <strong>Task #</strong>,
+          plus <strong>Task Name</strong> or <strong>Vantage</strong>.
+        </p>
+
+        <div class="lookup-actions">
+          <button id="upload-btn" class="btn-primary" type="button" disabled>
+            Upload CSV
+          </button>
+          <button id="clear-lookup-btn" class="btn-secondary" type="button">
+            Clear CSV
+          </button>
+        </div>
+
+        <p id="lookup-summary" class="lookup-summary">No CSV uploaded.</p>
+        <p id="lookup-status" class="lookup-status" aria-live="polite"></p>
+      </section>
+
       <section id="column-list-section">
+        <h2 class="section-title">Columns</h2>
         <p class="empty-state" id="empty-state">
           Open the Vantage timesheet page to detect columns.
         </p>

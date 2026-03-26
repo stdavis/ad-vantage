@@ -1,6 +1,6 @@
 # ad-vantage
 
-Chrome extension to enhance the Vantage timesheet app with frozen columns, hidden columns, and a description lookup column.
+Chrome extension to enhance the Vantage timesheet app with frozen columns, hidden columns, and an optional description lookup column powered by a user-uploaded CSV.
 
 ## Prerequisites
 
@@ -68,8 +68,16 @@ Without `--user-data-dir`, Chrome Dev will use its default profile. That is simp
 ## Usage
 
 1. **Navigate to Vantage:** After loading the extension, visit the Vantage timesheet application at `https://vantage.utah.gov/`.
-2. **Interact with the Page:** The extension will automatically begin injecting enhancements like frozen columns and hidden columns based on its logic.
-3. **Extension Popup:** Click the extension icon in your Chrome toolbar to view the popup interface, which will be available while actively on the Vantage domain.
+2. **Upload lookup data if needed:** Open the extension popup and upload a CSV file if you want the optional Description column to display task descriptions.
+3. **Interact with the Page:** The extension will automatically begin injecting enhancements like frozen columns and hidden columns based on its logic.
+4. **Extension Popup:** Click the extension icon in your Chrome toolbar to view the popup interface, which lets you manage column settings and the optional lookup CSV while actively on the Vantage domain.
+
+### Lookup CSV Requirements
+
+- Upload the CSV from the popup. The extension does not bundle a default `lookup.csv` file.
+- The CSV must include `Task#` or `Task #` and either `Task Name` or `Vantage` columns.
+- Uploaded lookup data is stored in `chrome.storage.local`, so it stays on the current browser profile without consuming Chrome sync quota.
+- Clearing the uploaded CSV from the popup disables description lookups until a new file is uploaded.
 
 ## Building for Production
 
