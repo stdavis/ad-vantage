@@ -44,6 +44,17 @@ Chrome extension to enhance the Vantage timesheet app with frozen columns, hidde
 
 When using `dist-dev`, Vite updates the files automatically while the dev server is running, and changes are reflected in the browser after refresh.
 
+## Load a Production `.zip` in Chrome
+
+Chrome does not load a local extension directly from a `.zip` file in `chrome://extensions/`. If you downloaded a production release archive, extract it first and then load the extracted folder as an unpacked extension.
+
+1. Download the production `.zip` file from the GitHub release or other distribution source.
+2. Extract the archive to a folder on disk.
+3. Open Chrome and navigate to `chrome://extensions/`.
+4. Enable **Developer mode**.
+5. Click **Load unpacked**.
+6. Select the extracted folder that contains the extension files, including `manifest.json` at the top level.
+
 ## MCP Browser Debugging
 
 Use Chrome Dev for browser automation and inspection instead of your normal Chrome session.
@@ -90,6 +101,8 @@ npm run build
 This will bundle and minify the extension into the `dist` folder, ready to be packaged as a `.zip` for the Chrome Web Store or distributed locally.
 
 If Chrome shows errors about `localhost:5173`, remove the unpacked extension and reload it from `dist` after running `npm run build`.
+
+For local installation, Chrome still expects an unpacked folder. If you package `dist` as a `.zip`, unzip it before loading it from `chrome://extensions/`.
 
 ## Releases
 
