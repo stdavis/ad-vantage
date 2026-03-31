@@ -124,11 +124,13 @@ function applyColumnVisibility(grid: HTMLElement, headerRow: HTMLElement) {
   resetHiddenColumns(grid);
 
   const headers = getColumnHeaders(headerRow);
+  const headerColumnCount = headers.length;
+  unhideExpandedDetailCells(grid, headerColumnCount);
 
   headers.forEach((th) => {
     const key = getColumnKey(th);
     if (currentPrefs.hidden.includes(key)) {
-      setColumnHidden(grid, getColumnIndex(th), true);
+      setColumnHidden(grid, getColumnIndex(th), true, headerColumnCount);
     }
   });
 }
@@ -144,12 +146,14 @@ function setColumnHidden(
   grid: HTMLElement,
   columnIndex: number,
   hidden: boolean,
+  headerColumnCount: number,
 ) {
-  const rows = grid.querySelectorAll<HTMLElement>("thead tr, tbody tr");
+  const rows = getRowsForCellMutations(grid, headerColumnCount);
 
   rows.forEach((row) => {
     const cell = getRowCell(row, columnIndex);
     if (!cell) return;
+    if (isExpandedDetailCell(cell, row, headerColumnCount)) return;
 
     if (hidden) {
       cell.style.display = "none";
@@ -178,6 +182,7 @@ function applyFrozenColumns(grid: HTMLElement, headerRow: HTMLElement) {
   if (currentPrefs.frozen.length === 0) return;
 
   const headers = getColumnHeaders(headerRow);
+  const headerColumnCount = headers.length;
   let accumulatedWidth = 0;
 
   headers.forEach((th) => {
@@ -188,18 +193,24 @@ function applyFrozenColumns(grid: HTMLElement, headerRow: HTMLElement) {
     const width = th.offsetWidth;
     const left = accumulatedWidth;
 
-    setColumnFrozen(grid, colIndex, left);
+    setColumnFrozen(grid, colIndex, left, headerColumnCount);
 
     accumulatedWidth += width;
   });
 }
 
-function setColumnFrozen(grid: HTMLElement, columnIndex: number, left: number) {
-  const rows = grid.querySelectorAll<HTMLElement>("thead tr, tbody tr");
+function setColumnFrozen(
+  grid: HTMLElement,
+  columnIndex: number,
+  left: number,
+  headerColumnCount: number,
+) {
+  const rows = getRowsForCellMutations(grid, headerColumnCount);
 
   rows.forEach((row) => {
     const cell = getRowCell(row, columnIndex);
     if (!cell) return;
+    if (isExpandedDetailCell(cell, row, headerColumnCount)) return;
 
     cell.style.position = "sticky";
     cell.style.left = `${left}px`;
@@ -289,7 +300,11 @@ function updateDescriptionCells(
   grid: HTMLElement,
   descriptionColumnIndex: number,
 ) {
-  const bodyRows = grid.querySelectorAll<HTMLElement>("tbody tr");
+  const mainHeaderRow = getMainHeaderRow(grid);
+  const headerColumnCount = mainHeaderRow
+    ? getColumnHeaders(mainHeaderRow).length
+    : 0;
+  const bodyRows = getPrimaryAndSummaryBodyRows(grid, headerColumnCount);
   bodyRows.forEach((row) => {
     if (isSummaryRow(row)) {
       syncSummaryDescriptionCell(row, descriptionColumnIndex);
@@ -331,11 +346,110 @@ function updateDescriptionCells(
 function isSummaryRow(row: HTMLElement): boolean {
   return Array.from(row.children).some((cell) => {
     if (!(cell instanceof HTMLTableCellElement)) return false;
-    if (cell.colSpan > 1) return true;
-
     const text = cell.textContent?.trim() ?? "";
     return text === "Total Hours";
   });
+}
+
+function isExpandedDetailRow(
+  row: HTMLElement,
+  headerColumnCount: number,
+): boolean {
+  if (isSummaryRow(row)) return false;
+
+  // Expanded detail panels render as a single full-width cell in their own row.
+  const cells = Array.from(row.children).filter(
+    (child): child is HTMLTableCellElement =>
+      child instanceof HTMLTableCellElement,
+  );
+
+  if (cells.length !== 1) {
+    return false;
+  }
+
+  const [cell] = cells;
+  const spansFullWidth = cell.colSpan >= Math.max(2, headerColumnCount - 1);
+
+  if (!spansFullWidth) {
+    return false;
+  }
+
+  return Boolean(
+    cell.querySelector(
+      '[role="tabpanel"], [role="tablist"], [data-qa-id*="cardGrid"], input, textarea, select, button',
+    ),
+  );
+}
+
+function isExpandedDetailCell(
+  cell: HTMLElement,
+  row: HTMLElement,
+  headerColumnCount: number,
+): boolean {
+  if (!(cell instanceof HTMLTableCellElement)) {
+    return false;
+  }
+
+  if (isExpandedDetailRow(row, headerColumnCount)) {
+    return true;
+  }
+
+  if (isSummaryRow(row)) {
+    return false;
+  }
+
+  const spansFullWidth = cell.colSpan >= Math.max(2, headerColumnCount - 1);
+  if (!spansFullWidth) {
+    return false;
+  }
+
+  return Boolean(
+    cell.querySelector(
+      '[role="tabpanel"], [role="tablist"], [data-qa-id*="cardGrid"], input, textarea, select, button',
+    ),
+  );
+}
+
+function unhideExpandedDetailCells(
+  grid: HTMLElement,
+  headerColumnCount: number,
+) {
+  grid
+    .querySelectorAll<HTMLElement>('tbody td[colspan], tbody th[colspan]')
+    .forEach((cell) => {
+      const row = cell.parentElement;
+      if (!(row instanceof HTMLElement)) return;
+      if (!isExpandedDetailCell(cell, row, headerColumnCount)) return;
+
+      cell.style.removeProperty("display");
+      cell.classList.remove("adv-hidden");
+      cell.style.removeProperty("position");
+      cell.style.removeProperty("left");
+      cell.style.removeProperty("top");
+      cell.style.removeProperty("z-index");
+      cell.style.removeProperty("background");
+      cell.style.removeProperty("background-color");
+      cell.classList.remove("adv-frozen");
+    });
+}
+
+function getRowsForCellMutations(
+  grid: HTMLElement,
+  headerColumnCount: number,
+): HTMLElement[] {
+  const headerRows = Array.from(grid.querySelectorAll<HTMLElement>("thead tr"));
+  const bodyRows = getPrimaryAndSummaryBodyRows(grid, headerColumnCount);
+
+  return [...headerRows, ...bodyRows];
+}
+
+function getPrimaryAndSummaryBodyRows(
+  grid: HTMLElement,
+  headerColumnCount: number,
+): HTMLElement[] {
+  return Array.from(grid.querySelectorAll<HTMLElement>("tbody tr")).filter(
+    (row) => !isExpandedDetailRow(row, headerColumnCount),
+  );
 }
 
 function syncSummaryDescriptionCell(
