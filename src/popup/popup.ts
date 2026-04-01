@@ -146,32 +146,11 @@ function setLookupStatus(message: string, state: "info" | "error" = "info") {
 }
 
 function renderColumnList(container: HTMLElement) {
-  container.innerHTML = "";
+  container.replaceChildren();
   columns.forEach(({ key, label }) => {
     const isVisible = !prefs.hidden.includes(key);
     const isFrozen = prefs.frozen.includes(key);
-
-    const row = document.createElement("div");
-    row.className = "column-row";
-
-    row.innerHTML = `
-      <span class="column-label" title="${label}">${label}</span>
-      <div class="column-controls">
-        <div class="control-group">
-          <label>Visible</label>
-          <label class="toggle">
-            <input type="checkbox" data-key="${key}" data-type="visible" ${isVisible ? "checked" : ""}/>
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-        <div class="control-group">
-          <label>Freeze</label>
-          <input type="checkbox" class="freeze-check" data-key="${key}" data-type="freeze" ${isFrozen ? "checked" : ""}/>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(row);
+    container.appendChild(createColumnRow({ key, label, isVisible, isFrozen }));
   });
 
   container
@@ -214,6 +193,84 @@ function renderColumnList(container: HTMLElement) {
         renderColumnList(container);
       });
     });
+}
+
+function createColumnRow(options: {
+  key: string;
+  label: string;
+  isVisible: boolean;
+  isFrozen: boolean;
+}): HTMLDivElement {
+  const { key, label, isVisible, isFrozen } = options;
+
+  const row = document.createElement("div");
+  row.className = "column-row";
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "column-label";
+  labelSpan.title = label;
+  labelSpan.textContent = label;
+
+  const controls = document.createElement("div");
+  controls.className = "column-controls";
+
+  controls.append(
+    createVisibilityControl({ key, checked: isVisible }),
+    createFreezeControl({ key, checked: isFrozen }),
+  );
+
+  row.append(labelSpan, controls);
+  return row;
+}
+
+function createVisibilityControl(options: {
+  key: string;
+  checked: boolean;
+}): HTMLDivElement {
+  const group = document.createElement("div");
+  group.className = "control-group";
+
+  const groupLabel = document.createElement("label");
+  groupLabel.textContent = "Visible";
+
+  const toggle = document.createElement("label");
+  toggle.className = "toggle";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.dataset.key = options.key;
+  input.dataset.type = "visible";
+  input.checked = options.checked;
+
+  const track = document.createElement("span");
+  track.className = "toggle-track";
+
+  toggle.append(input, track);
+  group.append(groupLabel, toggle);
+
+  return group;
+}
+
+function createFreezeControl(options: {
+  key: string;
+  checked: boolean;
+}): HTMLDivElement {
+  const group = document.createElement("div");
+  group.className = "control-group";
+
+  const groupLabel = document.createElement("label");
+  groupLabel.textContent = "Freeze";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.className = "freeze-check";
+  input.dataset.key = options.key;
+  input.dataset.type = "freeze";
+  input.checked = options.checked;
+
+  group.append(groupLabel, input);
+
+  return group;
 }
 
 async function detectColumnsFromActiveTab(): Promise<ColumnInfo[]> {
