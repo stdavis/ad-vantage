@@ -17,8 +17,7 @@ interface ColumnInfo {
 const DESCRIPTION_COL_KEY = "adv-description";
 const DESCRIPTION_COL_LABEL = "Description";
 const DAILY_ACTIVITY_QA = "DLY_ACTV_CD";
-const MODAL_ANCESTOR_SELECTOR =
-  '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
+const GET_COLUMNS_MESSAGE_TYPE = "adv:get-columns";
 
 let prefs: ColumnPrefs = {
   hidden: [],
@@ -219,59 +218,14 @@ function renderColumnList(container: HTMLElement) {
 
 async function detectColumnsFromActiveTab(): Promise<ColumnInfo[]> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id || !tab.url?.includes("vantage.utah.gov")) return [];
+  if (!tab?.id) return [];
 
   try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      args: [MODAL_ANCESTOR_SELECTOR],
-      func: (modalAncestorSelector) => {
-        const grid = Array.from(
-          document.querySelectorAll<HTMLElement>('div[role="grid"]'),
-        ).find((candidate) => !candidate.closest(modalAncestorSelector));
+    const response = (await chrome.tabs.sendMessage(tab.id, {
+      type: GET_COLUMNS_MESSAGE_TYPE,
+    })) as { columns?: ColumnInfo[] } | undefined;
 
-        if (!grid) return [];
-
-        const headers = grid.querySelectorAll<HTMLElement>(
-          'thead th[role="columnheader"]',
-        );
-        return Array.from(headers)
-          .map((th) => {
-            const label =
-              th
-                .querySelector('[data-qa-id$=".headerCellTitle"]')
-                ?.textContent?.trim() ??
-              th.textContent?.trim() ??
-              "";
-
-            const dateMatch = label.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
-            const key = dateMatch
-              ? dateMatch[1]
-              : (th.getAttribute("data-qa") ?? label);
-
-            return { key, label };
-          })
-          .filter((c) => c.key);
-      },
-    });
-    const rawColumns = (results?.[0]?.result as ColumnInfo[]) ?? [];
-
-    // Normalize and deduplicate based on the simplified key
-    const seen = new Set<string>();
-    const columns = rawColumns.reduce<ColumnInfo[]>((acc, col) => {
-      if (!seen.has(col.key)) {
-        seen.add(col.key);
-        // Clean up the label for display (e.g. 'Sat 03/14' -> 'Sat')
-        const dateMatch = col.label.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
-        acc.push({
-          key: col.key,
-          label: dateMatch ? dateMatch[1] : col.label,
-        });
-      }
-      return acc;
-    }, []);
-
-    return ensureDescriptionColumn(columns);
+    return ensureDescriptionColumn(response?.columns ?? []);
   } catch {
     return ensureDescriptionColumn([]);
   }

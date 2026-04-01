@@ -15,9 +15,15 @@ const DESCRIPTION_COL_LABEL = "Description";
 const DAILY_ACTIVITY_QA = "DLY_ACTV_CD"; // data-qa value for the "Daily Activity" column
 const MODAL_ANCESTOR_SELECTOR =
   '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
+const GET_COLUMNS_MESSAGE_TYPE = "adv:get-columns";
 const AUTOCOMPLETE_STYLES_ID = "adv-autocomplete-styles";
 const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
 const MAX_AUTOCOMPLETE_RESULTS = 8;
+
+interface ColumnInfo {
+  key: string;
+  label: string;
+}
 
 interface AutocompleteLookupEntry extends LookupSearchEntry {
   normalizedTaskCode: string;
@@ -105,6 +111,14 @@ async function init() {
     }
   });
 
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type !== GET_COLUMNS_MESSAGE_TYPE) {
+      return;
+    }
+
+    sendResponse({ columns: getColumnsForPopup() });
+  });
+
   observeMutations();
 }
 
@@ -158,6 +172,46 @@ function enhanceGrid(grid: HTMLElement) {
 
 function isEnhanceableGrid(grid: HTMLElement): boolean {
   return !grid.closest(MODAL_ANCESTOR_SELECTOR);
+}
+
+function getColumnsForPopup(): ColumnInfo[] {
+  const mainHeaderRow = Array.from(
+    document.querySelectorAll<HTMLElement>('div[role="grid"]'),
+  )
+    .filter(isEnhanceableGrid)
+    .map((grid) => getMainHeaderRow(grid))
+    .find((headerRow): headerRow is HTMLElement => Boolean(headerRow));
+
+  if (!mainHeaderRow) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+
+  return getColumnHeaders(mainHeaderRow).reduce<ColumnInfo[]>((acc, th) => {
+    const key = getColumnKey(th);
+    if (!key || seen.has(key)) {
+      return acc;
+    }
+
+    seen.add(key);
+    acc.push({
+      key,
+      label: getColumnLabel(th),
+    });
+
+    return acc;
+  }, []);
+}
+
+function getColumnLabel(th: HTMLElement): string {
+  const label =
+    th.querySelector('[data-qa-id$=".headerCellTitle"]')?.textContent?.trim() ??
+    th.textContent?.trim() ??
+    "";
+
+  const dateMatch = label.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
+  return dateMatch ? dateMatch[1] : label;
 }
 
 // ─── Column Visibility ───────────────────────────────────────────────────────
