@@ -7,7 +7,7 @@ import {
   type ColumnPrefs,
   type LookupDataRecord,
 } from "../shared/storage";
-import { parseCsv, serializeLookupMap } from "../shared/csv";
+import { parseCsvData, serializeLookupMap } from "../shared/csv";
 
 interface ColumnInfo {
   key: string;
@@ -65,9 +65,9 @@ async function init() {
     }
 
     const text = await file.text();
-    const parsedLookup = parseCsv(text);
+    const parsedLookup = parseCsvData(text);
 
-    if (parsedLookup.size === 0) {
+    if (parsedLookup.lookupMap.size === 0) {
       setLookupStatus(
         "The CSV did not contain any valid Task# or Vantage lookup rows.",
         "error",
@@ -75,10 +75,16 @@ async function init() {
       return;
     }
 
-    lookupData = serializeLookupMap(parsedLookup, file.name);
+    lookupData = serializeLookupMap(
+      parsedLookup.lookupMap,
+      file.name,
+      parsedLookup.searchEntries,
+    );
     await setLookupData(lookupData);
     renderLookupSummary();
-    setLookupStatus(`Uploaded ${lookupData.entryCount} lookup entries.`);
+    setLookupStatus(
+      `Uploaded ${lookupData.entryCount} Daily Activity suggestions.`,
+    );
     lookupFileInput.value = "";
     uploadButton.disabled = true;
   });
@@ -119,13 +125,13 @@ function renderLookupSummary() {
 
   if (!lookupData) {
     summary.textContent =
-      "No CSV uploaded. The Description column will stay blank.";
+      "No CSV uploaded. The Description column and Daily Activity autocomplete will stay blank.";
     clearLookupButton.disabled = true;
     return;
   }
 
   const uploadedAt = new Date(lookupData.uploadedAt).toLocaleString();
-  summary.textContent = `${lookupData.fileName} loaded with ${lookupData.entryCount} entries. Updated ${uploadedAt}.`;
+  summary.textContent = `${lookupData.fileName} loaded with ${lookupData.entryCount} task suggestions. Updated ${uploadedAt}.`;
   clearLookupButton.disabled = false;
 }
 

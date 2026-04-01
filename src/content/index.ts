@@ -4,28 +4,58 @@ import {
   onLookupDataChanged,
   type ColumnPrefs,
 } from "../shared/storage";
-import { loadLookupMap } from "../shared/csv";
+import {
+  loadLookupEntries,
+  loadLookupMap,
+  type LookupSearchEntry,
+} from "../shared/csv";
 
 const DESCRIPTION_COL_KEY = "adv-description";
 const DESCRIPTION_COL_LABEL = "Description";
 const DAILY_ACTIVITY_QA = "DLY_ACTV_CD"; // data-qa value for the "Daily Activity" column
 const MODAL_ANCESTOR_SELECTOR =
   '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
+const AUTOCOMPLETE_STYLES_ID = "adv-autocomplete-styles";
+const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
+const MAX_AUTOCOMPLETE_RESULTS = 8;
+
+interface AutocompleteLookupEntry extends LookupSearchEntry {
+  normalizedTaskCode: string;
+  normalizedDescription: string;
+  normalizedSearchText: string;
+}
+
+interface ActiveAutocompleteState {
+  input: HTMLInputElement | HTMLTextAreaElement;
+  menu: HTMLDivElement;
+  suggestions: AutocompleteLookupEntry[];
+  highlightedIndex: number;
+  reposition: () => void;
+  cleanup: () => void;
+}
 
 let lookupMap: Map<string, string> = new Map();
+let lookupEntries: AutocompleteLookupEntry[] = [];
 let currentPrefs: ColumnPrefs = {
   hidden: [],
   frozen: [DAILY_ACTIVITY_QA, DESCRIPTION_COL_KEY],
 };
 let hasLoggedMissingGrid = false;
 const warnedMissingTasks = new Set<string>();
+let activeAutocomplete: ActiveAutocompleteState | null = null;
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
 async function init() {
   console.info("[ad-vantage] Content script initializing.");
 
-  lookupMap = await loadLookupMap();
+  const [initialLookupMap, initialLookupEntries] = await Promise.all([
+    loadLookupMap(),
+    loadLookupEntries(),
+  ]);
+
+  lookupMap = initialLookupMap;
+  lookupEntries = buildAutocompleteEntries(initialLookupEntries);
 
   try {
     currentPrefs = await getColumnPrefs();
@@ -42,6 +72,7 @@ async function init() {
 
   console.info("[ad-vantage] Initial state ready.", {
     lookupEntries: lookupMap.size,
+    autocompleteEntries: lookupEntries.length,
     hidden: currentPrefs.hidden,
     frozen: currentPrefs.frozen,
   });
@@ -56,10 +87,17 @@ async function init() {
 
   onLookupDataChanged(async () => {
     try {
-      lookupMap = await loadLookupMap();
+      const [nextLookupMap, nextLookupEntries] = await Promise.all([
+        loadLookupMap(),
+        loadLookupEntries(),
+      ]);
+
+      lookupMap = nextLookupMap;
+      lookupEntries = buildAutocompleteEntries(nextLookupEntries);
       warnedMissingTasks.clear();
       console.info("[ad-vantage] Lookup data changed.", {
         lookupEntries: lookupMap.size,
+        autocompleteEntries: lookupEntries.length,
       });
       applyEnhancements();
     } catch (error) {
@@ -75,6 +113,9 @@ async function init() {
 function applyEnhancements() {
   mutationObserver?.disconnect();
   try {
+    ensureAutocompleteStyles();
+    closeAutocompleteIfStale();
+
     const grids = Array.from(
       document.querySelectorAll<HTMLElement>('div[role="grid"]'),
     ).filter(isEnhanceableGrid);
@@ -112,6 +153,7 @@ function enhanceGrid(grid: HTMLElement) {
   syncDescriptionColumns(grid, headerRows, mainHeaderRow);
   applyColumnVisibility(grid, layoutHeaderRow);
   applyFrozenColumns(grid, layoutHeaderRow);
+  bindDailyActivityAutocomplete(grid, mainHeaderRow);
 }
 
 function isEnhanceableGrid(grid: HTMLElement): boolean {
@@ -415,7 +457,7 @@ function unhideExpandedDetailCells(
   headerColumnCount: number,
 ) {
   grid
-    .querySelectorAll<HTMLElement>('tbody td[colspan], tbody th[colspan]')
+    .querySelectorAll<HTMLElement>("tbody td[colspan], tbody th[colspan]")
     .forEach((cell) => {
       const row = cell.parentElement;
       if (!(row instanceof HTMLElement)) return;
@@ -495,6 +537,505 @@ function warnMissingTask(taskCode: string) {
   console.warn(
     `[ad-vantage] No description match found in uploaded lookup data for task "${taskCode}".`,
   );
+}
+
+// ─── Daily Activity Autocomplete ────────────────────────────────────────────
+
+function bindDailyActivityAutocomplete(
+  grid: HTMLElement,
+  headerRow: HTMLElement,
+) {
+  if (lookupEntries.length === 0) {
+    return;
+  }
+
+  const dailyActivityTh = headerRow.querySelector<HTMLElement>(
+    `th[data-qa="${DAILY_ACTIVITY_QA}"]`,
+  );
+  if (!dailyActivityTh) {
+    return;
+  }
+
+  const dailyActivityColumnIndex = getColumnIndex(dailyActivityTh);
+  const headerColumnCount = getColumnHeaders(headerRow).length;
+  const rows = getPrimaryAndSummaryBodyRows(grid, headerColumnCount);
+
+  rows.forEach((row) => {
+    if (isSummaryRow(row)) {
+      return;
+    }
+
+    const activityCell = getRowCell(row, dailyActivityColumnIndex);
+    if (!activityCell) {
+      return;
+    }
+
+    const input = activityCell.querySelector<
+      HTMLInputElement | HTMLTextAreaElement
+    >('input:not([type="checkbox"]):not([type="hidden"]), textarea');
+    if (!input || input.getAttribute(AUTOCOMPLETE_BOUND_ATTR) === "true") {
+      return;
+    }
+
+    bindDailyActivityInput(input);
+  });
+}
+
+function bindDailyActivityInput(input: HTMLInputElement | HTMLTextAreaElement) {
+  input.setAttribute(AUTOCOMPLETE_BOUND_ATTR, "true");
+  input.setAttribute("autocomplete", "off");
+
+  input.addEventListener("focus", () => {
+    updateAutocompleteSuggestions(input, input.value);
+  });
+
+  input.addEventListener("input", () => {
+    updateAutocompleteSuggestions(input, input.value);
+  });
+
+  input.addEventListener("keydown", (event) => {
+    handleAutocompleteKeydown(event as KeyboardEvent, input);
+  });
+
+  input.addEventListener("blur", () => {
+    window.setTimeout(() => {
+      if (activeAutocomplete?.input === input) {
+        closeAutocomplete();
+      }
+    }, 150);
+  });
+}
+
+function updateAutocompleteSuggestions(
+  input: HTMLInputElement | HTMLTextAreaElement,
+  query: string,
+) {
+  if (!document.contains(input)) {
+    closeAutocomplete();
+    return;
+  }
+
+  const trimmedQuery = query.trim();
+  if (trimmedQuery.length === 0) {
+    closeAutocomplete(input);
+    return;
+  }
+
+  const suggestions = getAutocompleteSuggestions(trimmedQuery);
+  if (suggestions.length === 0) {
+    closeAutocomplete(input);
+    return;
+  }
+
+  const state = ensureAutocompleteState(input);
+  state.suggestions = suggestions;
+  state.highlightedIndex = Math.min(
+    state.highlightedIndex,
+    suggestions.length - 1,
+  );
+  renderAutocompleteMenu(state);
+  state.reposition();
+}
+
+function getAutocompleteSuggestions(query: string): AutocompleteLookupEntry[] {
+  const normalizedQuery = normalizeSearchValue(query);
+  if (normalizedQuery.length === 0) {
+    return [];
+  }
+
+  return lookupEntries
+    .map((entry) => ({
+      entry,
+      score: getAutocompleteScore(entry, normalizedQuery),
+    }))
+    .filter((result) => result.score !== Number.POSITIVE_INFINITY)
+    .sort((left, right) => {
+      if (left.score !== right.score) {
+        return left.score - right.score;
+      }
+
+      if (left.entry.description.length !== right.entry.description.length) {
+        return left.entry.description.length - right.entry.description.length;
+      }
+
+      return left.entry.taskCode.localeCompare(right.entry.taskCode);
+    })
+    .slice(0, MAX_AUTOCOMPLETE_RESULTS)
+    .map((result) => result.entry);
+}
+
+function getAutocompleteScore(
+  entry: AutocompleteLookupEntry,
+  normalizedQuery: string,
+): number {
+  if (entry.normalizedDescription === normalizedQuery) return 0;
+  if (entry.normalizedTaskCode === normalizedQuery) return 1;
+  if (entry.normalizedDescription.startsWith(normalizedQuery)) return 2;
+  if (entry.normalizedTaskCode.startsWith(normalizedQuery)) return 3;
+
+  const descriptionIndex = entry.normalizedDescription.indexOf(normalizedQuery);
+  if (descriptionIndex !== -1) {
+    return 10 + descriptionIndex;
+  }
+
+  const searchIndex = entry.normalizedSearchText.indexOf(normalizedQuery);
+  if (searchIndex !== -1) {
+    return 100 + searchIndex;
+  }
+
+  return Number.POSITIVE_INFINITY;
+}
+
+function ensureAutocompleteState(
+  input: HTMLInputElement | HTMLTextAreaElement,
+): ActiveAutocompleteState {
+  if (activeAutocomplete?.input === input) {
+    return activeAutocomplete;
+  }
+
+  closeAutocomplete();
+
+  const menu = document.createElement("div");
+  menu.className = "adv-autocomplete-menu";
+  menu.setAttribute("role", "listbox");
+  menu.setAttribute("aria-label", "Daily Activity suggestions");
+  menu.addEventListener("pointerdown", (event) => {
+    const target = event.target as HTMLElement | null;
+    const option = target?.closest<HTMLElement>("[data-adv-suggestion-index]");
+    if (!option) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const optionIndex = Number(option.dataset.advSuggestionIndex);
+    if (!Number.isInteger(optionIndex)) {
+      return;
+    }
+
+    selectAutocompleteSuggestion(input, optionIndex, { keepFocus: true });
+  });
+
+  document.body.appendChild(menu);
+
+  const reposition = () => {
+    positionAutocompleteMenu(input, menu);
+  };
+
+  const cleanup = () => {
+    window.removeEventListener("resize", reposition);
+    window.removeEventListener("scroll", reposition, true);
+  };
+
+  window.addEventListener("resize", reposition);
+  window.addEventListener("scroll", reposition, true);
+
+  activeAutocomplete = {
+    input,
+    menu,
+    suggestions: [],
+    highlightedIndex: 0,
+    reposition,
+    cleanup,
+  };
+
+  return activeAutocomplete;
+}
+
+function renderAutocompleteMenu(state: ActiveAutocompleteState) {
+  state.menu.innerHTML = "";
+
+  state.suggestions.forEach((entry, index) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "adv-autocomplete-option";
+    option.dataset.advSuggestionIndex = String(index);
+    option.setAttribute("role", "option");
+    option.setAttribute(
+      "aria-selected",
+      index === state.highlightedIndex ? "true" : "false",
+    );
+
+    if (index === state.highlightedIndex) {
+      option.classList.add("is-active");
+    }
+
+    const code = document.createElement("span");
+    code.className = "adv-autocomplete-code";
+    code.textContent = entry.taskCode;
+
+    const description = document.createElement("span");
+    description.className = "adv-autocomplete-description";
+    description.textContent = entry.description || "No description available";
+
+    option.append(code, description);
+    state.menu.appendChild(option);
+  });
+}
+
+function positionAutocompleteMenu(
+  input: HTMLInputElement | HTMLTextAreaElement,
+  menu: HTMLDivElement,
+) {
+  if (!document.contains(input)) {
+    closeAutocomplete();
+    return;
+  }
+
+  const rect = input.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) {
+    closeAutocomplete();
+    return;
+  }
+
+  const maxWidth = Math.min(420, window.innerWidth - 16);
+  const width = Math.min(Math.max(rect.width, 280), maxWidth);
+
+  menu.style.width = `${width}px`;
+  menu.style.left = `${Math.min(rect.left, window.innerWidth - width - 8)}px`;
+
+  const top = rect.bottom + 4;
+  const menuHeight = menu.offsetHeight || 0;
+  const preferredTop =
+    top + menuHeight > window.innerHeight - 8
+      ? Math.max(8, rect.top - menuHeight - 4)
+      : top;
+
+  menu.style.top = `${preferredTop}px`;
+}
+
+function handleAutocompleteKeydown(
+  event: KeyboardEvent,
+  input: HTMLInputElement | HTMLTextAreaElement,
+) {
+  const state = activeAutocomplete;
+
+  if (event.key === "ArrowDown") {
+    if (!state || state.input !== input) {
+      updateAutocompleteSuggestions(input, input.value);
+    }
+
+    if (
+      activeAutocomplete?.input === input &&
+      activeAutocomplete.suggestions.length > 0
+    ) {
+      event.preventDefault();
+      moveAutocompleteHighlight(1);
+    }
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    if (state?.input === input && state.suggestions.length > 0) {
+      event.preventDefault();
+      moveAutocompleteHighlight(-1);
+    }
+    return;
+  }
+
+  if (event.key === "Escape") {
+    if (state?.input === input) {
+      event.preventDefault();
+      closeAutocomplete();
+    }
+    return;
+  }
+
+  if (event.key === "Enter") {
+    if (state?.input === input && state.suggestions.length > 0) {
+      event.preventDefault();
+      selectAutocompleteSuggestion(input, state.highlightedIndex, {
+        keepFocus: true,
+      });
+    }
+    return;
+  }
+
+  if (event.key === "Tab") {
+    if (state?.input === input && state.suggestions.length > 0) {
+      selectAutocompleteSuggestion(input, state.highlightedIndex, {
+        keepFocus: false,
+      });
+    }
+  }
+}
+
+function moveAutocompleteHighlight(delta: number) {
+  if (!activeAutocomplete || activeAutocomplete.suggestions.length === 0) {
+    return;
+  }
+
+  const nextIndex =
+    (activeAutocomplete.highlightedIndex +
+      delta +
+      activeAutocomplete.suggestions.length) %
+    activeAutocomplete.suggestions.length;
+  activeAutocomplete.highlightedIndex = nextIndex;
+  renderAutocompleteMenu(activeAutocomplete);
+
+  const activeOption = activeAutocomplete.menu.querySelector<HTMLElement>(
+    `[data-adv-suggestion-index="${nextIndex}"]`,
+  );
+  activeOption?.scrollIntoView({ block: "nearest" });
+}
+
+function selectAutocompleteSuggestion(
+  input: HTMLInputElement | HTMLTextAreaElement,
+  suggestionIndex: number,
+  options: { keepFocus: boolean },
+) {
+  const state = activeAutocomplete;
+  if (!state || state.input !== input) {
+    return;
+  }
+
+  const selectedEntry = state.suggestions[suggestionIndex];
+  if (!selectedEntry) {
+    return;
+  }
+
+  setFormControlValue(input, selectedEntry.taskCode);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+
+  closeAutocomplete();
+
+  if (options.keepFocus) {
+    input.focus();
+
+    if (typeof input.setSelectionRange === "function") {
+      input.setSelectionRange(
+        selectedEntry.taskCode.length,
+        selectedEntry.taskCode.length,
+      );
+    }
+  }
+
+  window.requestAnimationFrame(() => {
+    applyEnhancements();
+  });
+}
+
+function closeAutocomplete(
+  targetInput?: HTMLInputElement | HTMLTextAreaElement,
+) {
+  if (!activeAutocomplete) {
+    return;
+  }
+
+  if (targetInput && activeAutocomplete.input !== targetInput) {
+    return;
+  }
+
+  activeAutocomplete.cleanup();
+  activeAutocomplete.menu.remove();
+  activeAutocomplete = null;
+}
+
+function closeAutocompleteIfStale() {
+  if (!activeAutocomplete) {
+    return;
+  }
+
+  if (!document.contains(activeAutocomplete.input)) {
+    closeAutocomplete();
+    return;
+  }
+
+  if (activeAutocomplete.input.closest(MODAL_ANCESTOR_SELECTOR)) {
+    closeAutocomplete();
+  }
+}
+
+function ensureAutocompleteStyles() {
+  if (document.getElementById(AUTOCOMPLETE_STYLES_ID)) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = AUTOCOMPLETE_STYLES_ID;
+  style.textContent = `
+    .adv-autocomplete-menu {
+      position: fixed;
+      z-index: 9999;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 6px;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    }
+
+    .adv-autocomplete-option {
+      display: flex;
+      width: 100%;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #0f172a;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .adv-autocomplete-option:hover,
+    .adv-autocomplete-option.is-active {
+      background: #e0f2fe;
+    }
+
+    .adv-autocomplete-code {
+      flex: 0 0 auto;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .adv-autocomplete-description {
+      flex: 1 1 auto;
+      color: #475569;
+      line-height: 1.35;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function buildAutocompleteEntries(
+  entries: LookupSearchEntry[],
+): AutocompleteLookupEntry[] {
+  return entries
+    .filter((entry) => entry.taskCode.trim().length > 0)
+    .map((entry) => ({
+      ...entry,
+      normalizedTaskCode: normalizeSearchValue(entry.taskCode),
+      normalizedDescription: normalizeSearchValue(entry.description),
+      normalizedSearchText: normalizeSearchValue(entry.searchText),
+    }));
+}
+
+function normalizeSearchValue(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function setFormControlValue(
+  input: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+) {
+  const prototype =
+    input instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+  const valueSetter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+
+  if (valueSetter) {
+    valueSetter.call(input, value);
+    return;
+  }
+
+  input.value = value;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

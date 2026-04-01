@@ -3,8 +3,15 @@ export interface ColumnPrefs {
   frozen: string[];
 }
 
+export interface LookupSearchEntryRecord {
+  taskCode: string;
+  description: string;
+  searchText: string;
+}
+
 export interface LookupDataRecord {
   entries: Array<[string, string]>;
+  searchEntries?: LookupSearchEntryRecord[];
   fileName: string;
   entryCount: number;
   uploadedAt: string;
