@@ -104,6 +104,49 @@ If Chrome shows errors about `localhost:5173`, remove the unpacked extension and
 
 For local installation, Chrome still expects an unpacked folder. If you package `dist` as a `.zip`, unzip it before loading it from `chrome://extensions/`.
 
+## Chrome Web Store
+
+The release workflow can publish new versions to the Chrome Web Store after the first manual submission is created in the Chrome Web Store dashboard.
+
+### First-Time Store Setup
+
+1. Create or finish your Chrome Web Store developer account and enable 2-step verification.
+2. Run `npm run build`.
+3. Upload the packaged `dist` contents as a new item in the Chrome Web Store dashboard.
+4. Complete the listing, privacy, and distribution sections in the dashboard.
+5. Submit the item once so Google assigns a permanent extension ID.
+
+The extension now includes packaged icons from `public/icons/icon16.png`, `public/icons/icon48.png`, and `public/icons/icon128.png` through `manifest.json`.
+
+### GitHub Secrets For Automated Publishing
+
+Add these repository secrets before expecting releases to publish to the Chrome Web Store automatically:
+
+- `CWS_CLIENT_ID`
+- `CWS_CLIENT_SECRET`
+- `CWS_REFRESH_TOKEN`
+- `CWS_PUBLISHER_ID`
+- `CWS_EXTENSION_ID`
+
+If any of these secrets are missing, the release workflow will still upload the built zip to GitHub Releases and skip the Chrome Web Store publish step.
+
+### Getting Chrome Web Store API Credentials
+
+1. In Google Cloud, enable the Chrome Web Store API for a project you control.
+2. Configure an OAuth consent screen.
+3. Create an OAuth client.
+4. Generate a refresh token with the `https://www.googleapis.com/auth/chromewebstore` scope.
+5. Copy your publisher ID from the Chrome Web Store developer dashboard.
+6. Copy the extension ID from the published store item.
+
+Once those secrets are configured, each published GitHub release will:
+
+1. Build the production extension.
+2. Zip the `dist` contents.
+3. Upload the archive to the GitHub release.
+4. Upload the same archive to the Chrome Web Store.
+5. Publish that uploaded version for review.
+
 ## Releases
 
 Releases are cut with `agrc/release-composite-action` from GitHub Actions.
