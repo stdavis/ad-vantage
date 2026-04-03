@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/stdavis/ad-vantage/compare/v1.0.0...v1.1.0) (2026-04-03)
+
+
+### Features
+
+* add support alternate DNS for non-state networks ([9411bd2](https://github.com/stdavis/ad-vantage/commit/9411bd2e783110edc3a136faf70f787cece8d92d))
+* implement autocomplete for Daily Activity column entry ([b462c19](https://github.com/stdavis/ad-vantage/commit/b462c19e740a7de562d68c3f45b550c7f068c71d))
+
+
+### Bug Fixes
+
+* fix bug causing expanded grids to be hidden while editing ([a5937db](https://github.com/stdavis/ad-vantage/commit/a5937db2b9006cf6c2d93c5524d768d8b58e9986))
+* harden popup rendering ([a325781](https://github.com/stdavis/ad-vantage/commit/a325781f95388df2e50761c0fbcde0aaafae23f5))
+* reduce required permissions to storage only ([9664b5b](https://github.com/stdavis/ad-vantage/commit/9664b5bcaa0be249e7d0260a93d465bf7f669392))
+
 ## [1.0.0](https://github.com/stdavis/ad-vantage/compare/v1.0.0...v1.0.0) (2026-03-26)
 
 
