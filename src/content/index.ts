@@ -431,8 +431,8 @@ function updateDescriptionCells(
     }
 
     descCell.textContent = description;
-    descCell.style.cssText =
-      "padding: 4px 8px; color: #555; font-style: italic;";
+    descCell.style.cssText = "padding: 4px 8px;";
+    descCell.classList.add("adv-description");
 
     const nextCell = row.children[descriptionColumnIndex - 1] ?? null;
     row.insertBefore(descCell, nextCell);
@@ -1052,6 +1052,11 @@ function ensureAutocompleteStyles() {
       flex: 1 1 auto;
       color: #475569;
       line-height: 1.35;
+    }
+
+    td.adv-description {
+      color: color-mix(in srgb, currentColor 60%, transparent);
+      font-style: italic;
     }
   `;
   document.head.appendChild(style);
