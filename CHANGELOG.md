@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/stdavis/ad-vantage/compare/v1.1.0...v1.2.0) (2026-04-06)
+
+
+### Features
+
+* add visual cues to hour values that are likely incorrect ([7de18ba](https://github.com/stdavis/ad-vantage/commit/7de18baa5c2df5e60d1f0654658ab9858dc62435)), closes [#4](https://github.com/stdavis/ad-vantage/issues/4)
+
+
+### Bug Fixes
+
+* better description text color when row is highlighted ([d98d8e5](https://github.com/stdavis/ad-vantage/commit/d98d8e5abb84e82275e1a29084f98987d83c7938)), closes [#5](https://github.com/stdavis/ad-vantage/issues/5)
+
 ## [1.1.0](https://github.com/stdavis/ad-vantage/compare/v1.0.0...v1.1.0) (2026-04-03)
 
 
