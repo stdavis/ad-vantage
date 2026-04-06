@@ -8,6 +8,7 @@ A Chrome extension that makes the [Vantage timesheet app](https://vantage.utah.g
 - **Hidden columns** — Declutter your view by hiding columns you don't need.
 - **Description lookup column** — Add an optional column that displays task descriptions pulled from a CSV file you upload.
 - **Daily Activity autocomplete** — Get suggestions as you type in the Daily Activity field, sourced from your uploaded lookup data.
+- **Quarter-hour warnings** — Time cells that don't end in `:00`, `:15`, `:30`, or `:45` are highlighted with an orange outline, helping you catch accidental decimal-style entries.
 - Works on both `vantage.utah.gov` and `vantage.access.utah.gov` (for non-state networks).
 
 <p align="center"><img src="popup.png" alt="ad-vantage popup screenshot" /></p>

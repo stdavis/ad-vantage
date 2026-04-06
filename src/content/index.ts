@@ -17,6 +17,7 @@ const MODAL_ANCESTOR_SELECTOR =
   '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
 const GET_COLUMNS_MESSAGE_TYPE = "adv:get-columns";
 const AUTOCOMPLETE_STYLES_ID = "adv-autocomplete-styles";
+const TIME_WARN_STYLES_ID = "adv-time-warn-styles";
 const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
 const MAX_AUTOCOMPLETE_RESULTS = 8;
 
@@ -128,6 +129,7 @@ function applyEnhancements() {
   mutationObserver?.disconnect();
   try {
     ensureAutocompleteStyles();
+    ensureTimeWarnStyles();
     closeAutocompleteIfStale();
 
     const grids = Array.from(
@@ -168,6 +170,7 @@ function enhanceGrid(grid: HTMLElement) {
   applyColumnVisibility(grid, layoutHeaderRow);
   applyFrozenColumns(grid, layoutHeaderRow);
   bindDailyActivityAutocomplete(grid, mainHeaderRow);
+  applyTimeWarnings(grid, mainHeaderRow);
 }
 
 function isEnhanceableGrid(grid: HTMLElement): boolean {
@@ -999,6 +1002,63 @@ function closeAutocompleteIfStale() {
   if (activeAutocomplete.input.closest(MODAL_ANCESTOR_SELECTOR)) {
     closeAutocomplete();
   }
+}
+
+function ensureTimeWarnStyles() {
+  if (document.getElementById(TIME_WARN_STYLES_ID)) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = TIME_WARN_STYLES_ID;
+  style.textContent = `
+    td.adv-time-warn {
+      outline: 6px solid orange;
+      outline-offset: -6px;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function applyTimeWarnings(
+  grid: HTMLElement,
+  mainHeaderRow: HTMLElement,
+): void {
+  const headers = getColumnHeaders(mainHeaderRow);
+  const headerColumnCount = headers.length;
+
+  // Collect column indices for day-of-week (time-entry) columns.
+  const dayColumnIndices: number[] = [];
+  headers.forEach((th) => {
+    if (/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)$/i.test(getColumnKey(th))) {
+      dayColumnIndices.push(getColumnIndex(th));
+    }
+  });
+
+  if (dayColumnIndices.length === 0) return;
+
+  // Reset warnings from the previous pass.
+  grid
+    .querySelectorAll<HTMLElement>(".adv-time-warn")
+    .forEach((cell) => cell.classList.remove("adv-time-warn"));
+
+  const rows = getPrimaryAndSummaryBodyRows(grid, headerColumnCount);
+  rows.forEach((row) => {
+    if (isSummaryRow(row) || isExpandedDetailRow(row, headerColumnCount))
+      return;
+
+    dayColumnIndices.forEach((colIndex) => {
+      const cell = getRowCell(row, colIndex);
+      if (!cell) return;
+
+      const value = getCellDisplayValue(cell);
+      if (value === "" || value === "0" || value === "-") return;
+
+      if (!/:(?:00|15|30|45)$/.test(value)) {
+        cell.classList.add("adv-time-warn");
+      }
+    });
+  });
 }
 
 function ensureAutocompleteStyles() {
