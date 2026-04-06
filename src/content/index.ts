@@ -19,6 +19,7 @@ const GET_COLUMNS_MESSAGE_TYPE = "adv:get-columns";
 const AUTOCOMPLETE_STYLES_ID = "adv-autocomplete-styles";
 const TIME_WARN_STYLES_ID = "adv-time-warn-styles";
 const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
+const TIME_WARN_BOUND_ATTR = "data-adv-time-warn-bound";
 const MAX_AUTOCOMPLETE_RESULTS = 8;
 
 interface ColumnInfo {
@@ -1020,6 +1021,20 @@ function ensureTimeWarnStyles() {
   document.head.appendChild(style);
 }
 
+function updateCellTimeWarning(cell: HTMLElement): void {
+  const value = getCellDisplayValue(cell);
+  if (
+    value === "" ||
+    value === "0" ||
+    value === "-" ||
+    /:(?:00|15|30|45)$/.test(value)
+  ) {
+    cell.classList.remove("adv-time-warn");
+  } else {
+    cell.classList.add("adv-time-warn");
+  }
+}
+
 function applyTimeWarnings(
   grid: HTMLElement,
   mainHeaderRow: HTMLElement,
@@ -1051,12 +1066,19 @@ function applyTimeWarnings(
       const cell = getRowCell(row, colIndex);
       if (!cell) return;
 
-      const value = getCellDisplayValue(cell);
-      if (value === "" || value === "0" || value === "-") return;
-
-      if (!/:(?:00|15|30|45)$/.test(value)) {
-        cell.classList.add("adv-time-warn");
+      // Attach a blur listener once so the warning updates as soon as the
+      // user leaves the cell, without waiting for the mutation observer.
+      const input = cell.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        "input, textarea",
+      );
+      if (input && input.getAttribute(TIME_WARN_BOUND_ATTR) !== "true") {
+        input.setAttribute(TIME_WARN_BOUND_ATTR, "true");
+        input.addEventListener("blur", () => {
+          updateCellTimeWarning(cell);
+        });
       }
+
+      updateCellTimeWarning(cell);
     });
   });
 }
