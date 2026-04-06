@@ -42,20 +42,20 @@ Uploading a CSV file enables the Description column and Daily Activity autocompl
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v18 or higher
-- npm, yarn, or pnpm
+- [pnpm](https://pnpm.io/) (install with `npm install -g pnpm` or via [other methods](https://pnpm.io/installation))
 
 ### Local Development
 
 1. **Install dependencies:**
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. **Start the development server:**
 
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
    This starts the Vite dev server with HMR via `@crxjs/vite-plugin`. Extension files are written to `dist-dev` and require `http://localhost:5173` to remain running.
@@ -63,7 +63,7 @@ Uploading a CSV file enables the Description column and Daily Activity autocompl
 3. **Launch the dedicated debug browser:**
 
    ```bash
-   npm run chrome:dev
+   pnpm chrome:dev
    ```
 
    Opens Google Chrome Dev with remote debugging on `http://127.0.0.1:9223`. Keep this browser open while using MCP-based browser inspection.
@@ -80,12 +80,12 @@ You can verify the remote debugging endpoint with:
 curl http://127.0.0.1:9223/json/version
 ```
 
-> If Chrome Dev is already running without the remote debugging flag, macOS may reuse the existing instance and ignore the new launch arguments. Quit Chrome Dev and run `npm run chrome:dev` again.
+> If Chrome Dev is already running without the remote debugging flag, macOS may reuse the existing instance and ignore the new launch arguments. Quit Chrome Dev and run `pnpm chrome:dev` again.
 
 ### Production Build
 
 ```bash
-npm run build
+pnpm build
 ```
 
 Bundles and minifies the extension into the `dist` folder. Load `dist` as an unpacked extension in `chrome://extensions/` to test the production build.
@@ -97,7 +97,7 @@ The release workflow can publish new versions to the Chrome Web Store after the 
 #### First-Time Store Setup
 
 1. Create a Chrome Web Store developer account and enable 2-step verification.
-2. Run `npm run build`.
+2. Run `pnpm build`.
 3. Upload the `dist` contents as a new item in the Chrome Web Store dashboard.
 4. Complete the listing, privacy, and distribution sections, then submit so Google assigns a permanent extension ID.
 

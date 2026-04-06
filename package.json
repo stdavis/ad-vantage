@@ -9,6 +9,11 @@
     "preview": "vite preview",
     "chrome:dev": "open -na \"Google Chrome Dev\" --args --remote-debugging-port=9223 --user-data-dir=\"$HOME/.ad-vantage-chrome-dev\""
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.26",
     "@types/chrome": "^0.0.268",
