@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/stdavis/ad-vantage/compare/v1.2.0...v1.2.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* add incorrect hours warning on blur ([d84b818](https://github.com/stdavis/ad-vantage/commit/d84b818a42d16d61d1a2a11315c67a0a40007e6f)), closes [#4](https://github.com/stdavis/ad-vantage/issues/4)
+
 ## [1.2.0](https://github.com/stdavis/ad-vantage/compare/v1.1.0...v1.2.0) (2026-04-06)
 
 

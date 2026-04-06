@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ad-vantage",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Enhances the Vantage timesheet table with frozen columns, hidden columns, and an optional uploaded description lookup column.",
   "icons": {
     "16": "icons/icon16.png",
