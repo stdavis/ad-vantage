@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/stdavis/ad-vantage/compare/v1.2.1...v1.3.0) (2026-04-07)
+
+
+### Features
+
+* add feedback link to popup ([96cdb14](https://github.com/stdavis/ad-vantage/commit/96cdb143dd308f1c2fab4f781ba75915b192cc11))
+* add version number and icon to popup ([3ec58d5](https://github.com/stdavis/ad-vantage/commit/3ec58d5fe0a9bb35789095db1c76c4af324dc8aa))
+
+
+### Bug Fixes
+
+* prevent warnings showing before times are normalized ([cc3ba97](https://github.com/stdavis/ad-vantage/commit/cc3ba97f3afe59956ad73b1de7d35aaa6eeca4ed))
+
 ## [1.2.1](https://github.com/stdavis/ad-vantage/compare/v1.2.0...v1.2.1) (2026-04-06)
 
 
