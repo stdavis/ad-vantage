@@ -1035,6 +1035,12 @@ function updateCellTimeWarning(cell: HTMLElement): void {
   }
 }
 
+function scheduleCellTimeWarningUpdate(cell: HTMLElement): void {
+  window.setTimeout(() => {
+    updateCellTimeWarning(cell);
+  }, 0);
+}
+
 function applyTimeWarnings(
   grid: HTMLElement,
   mainHeaderRow: HTMLElement,
@@ -1074,7 +1080,7 @@ function applyTimeWarnings(
       if (input && input.getAttribute(TIME_WARN_BOUND_ATTR) !== "true") {
         input.setAttribute(TIME_WARN_BOUND_ATTR, "true");
         input.addEventListener("blur", () => {
-          updateCellTimeWarning(cell);
+          scheduleCellTimeWarningUpdate(cell);
         });
       }
 
