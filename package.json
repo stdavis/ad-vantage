@@ -1,6 +1,6 @@
 {
   "name": "ad-vantage",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Chrome extension to enhance the Vantage timesheet app",
   "private": true,
   "scripts": {
