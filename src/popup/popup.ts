@@ -26,7 +26,26 @@ let prefs: ColumnPrefs = {
 let columns: ColumnInfo[] = [];
 let lookupData: LookupDataRecord | null = null;
 
+function renderHeaderIcon() {
+  const iconElement = document.getElementById("header-icon") as
+    | HTMLImageElement
+    | null;
+  if (!iconElement) return;
+
+  iconElement.src = chrome.runtime.getURL("icons/icon48.png");
+}
+
+function renderExtensionVersion() {
+  const versionElement = document.getElementById("extension-version");
+  if (!versionElement) return;
+
+  versionElement.textContent = `v${chrome.runtime.getManifest().version}`;
+}
+
 async function init() {
+  renderHeaderIcon();
+  renderExtensionVersion();
+
   const [nextPrefs, nextColumns, nextLookupData] = await Promise.all([
     getColumnPrefs(),
     detectColumnsFromActiveTab(),
