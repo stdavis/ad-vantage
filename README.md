@@ -12,7 +12,14 @@ A Chrome extension that makes the [Vantage timesheet app](https://vantage.utah.g
 - Works on both `vantage.utah.gov` and `vantage.access.utah.gov` (for non-state networks).
 
 <p align="center"><img src="popup.png" alt="ad-vantage popup screenshot" /></p>
+
+Type-ahead search for tasks based on description:
+
 <p align="center"><img src="screenshot.png" alt="grid screenshot" /></p>
+
+Warnings for non-quarter-hour time entries:
+
+<p align="center"><img src="warnings.png" alt="warnings screenshot" /></p>
 
 ## Installation
 
