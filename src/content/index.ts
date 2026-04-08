@@ -21,6 +21,17 @@ const TIME_WARN_STYLES_ID = "adv-time-warn-styles";
 const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
 const TIME_WARN_BOUND_ATTR = "data-adv-time-warn-bound";
 const MAX_AUTOCOMPLETE_RESULTS = 8;
+const TIME_ENTRY_DAY_TOTAL_QA_PATTERN = /^DAY_\d+_TIME_TOT$/;
+const TIME_ENTRY_WEEK_TOTAL_QA_PATTERN = /^WEEK_\d+_TOT$/;
+const TIME_ENTRY_WARNING_EXCLUDED_QAS = new Set([
+  "PY_PRD_AM",
+  "MTHLY_AM",
+  "ANUAL_AM",
+  "HRLY_AM",
+  "FREQ",
+  "EFFECTIVE_DT",
+  "EXPIRATION_DT",
+]);
 
 interface ColumnInfo {
   key: string;
@@ -1041,10 +1052,56 @@ function scheduleCellTimeWarningUpdate(cell: HTMLElement): void {
   }, 0);
 }
 
+function isTimeEntryWarningGrid(
+  grid: HTMLElement,
+  mainHeaderRow: HTMLElement,
+): boolean {
+  const headers = getColumnHeaders(mainHeaderRow);
+  const headerColumnCount = headers.length;
+  const headerQas = headers
+    .map((th) => th.getAttribute("data-qa")?.trim() ?? "")
+    .filter((qa) => qa.length > 0);
+
+  if (headerQas.length === 0) {
+    return false;
+  }
+
+  if (headerQas.some((qa) => TIME_ENTRY_WARNING_EXCLUDED_QAS.has(qa))) {
+    return false;
+  }
+
+  const hasDayTimeTotals = headerQas.some((qa) =>
+    TIME_ENTRY_DAY_TOTAL_QA_PATTERN.test(qa),
+  );
+  if (!hasDayTimeTotals) {
+    return false;
+  }
+
+  const hasDailyActivity = headerQas.includes(DAILY_ACTIVITY_QA);
+  const hasWeekTotals = headerQas.some((qa) =>
+    TIME_ENTRY_WEEK_TOTAL_QA_PATTERN.test(qa),
+  );
+  const hasGrandTotalHours = headerQas.includes("DAY_TOTAL_HOURS");
+
+  if (hasDailyActivity || hasWeekTotals || hasGrandTotalHours) {
+    return true;
+  }
+
+  const rows = getPrimaryAndSummaryBodyRows(grid, headerColumnCount);
+  return rows.some((row) => isSummaryRow(row));
+}
+
 function applyTimeWarnings(
   grid: HTMLElement,
   mainHeaderRow: HTMLElement,
 ): void {
+  if (!isTimeEntryWarningGrid(grid, mainHeaderRow)) {
+    grid
+      .querySelectorAll<HTMLElement>(".adv-time-warn")
+      .forEach((cell) => cell.classList.remove("adv-time-warn"));
+    return;
+  }
+
   const headers = getColumnHeaders(mainHeaderRow);
   const headerColumnCount = headers.length;
 
