@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/stdavis/ad-vantage/compare/v1.3.0...v1.3.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* prevent timeentry warnings on non-timeentry grids ([4011c79](https://github.com/stdavis/ad-vantage/commit/4011c79795331ee1d0212a3afc8017abb6951bf3))
+
 ## [1.3.0](https://github.com/stdavis/ad-vantage/compare/v1.2.1...v1.3.0) (2026-04-07)
 
 
