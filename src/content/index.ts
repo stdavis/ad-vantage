@@ -18,8 +18,12 @@ const MODAL_ANCESTOR_SELECTOR =
 const GET_COLUMNS_MESSAGE_TYPE = "adv:get-columns";
 const AUTOCOMPLETE_STYLES_ID = "adv-autocomplete-styles";
 const TIME_WARN_STYLES_ID = "adv-time-warn-styles";
+const UPDATE_TIMESHEET_SHORTCUT_STYLES_ID =
+  "adv-update-timesheet-shortcut-styles";
 const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
 const TIME_WARN_BOUND_ATTR = "data-adv-time-warn-bound";
+const UPDATE_TIMESHEET_SHORTCUT_ATTR =
+  "data-adv-update-timesheet-shortcut";
 const MAX_AUTOCOMPLETE_RESULTS = 8;
 const TIME_ENTRY_DAY_TOTAL_QA_PATTERN = /^DAY_\d+_TIME_TOT$/;
 const TIME_ENTRY_WEEK_TOTAL_QA_PATTERN = /^WEEK_\d+_TOT$/;
@@ -32,6 +36,18 @@ const TIME_ENTRY_WARNING_EXCLUDED_QAS = new Set([
   "EFFECTIVE_DT",
   "EXPIRATION_DT",
 ]);
+const PAGE_ACTIONS_MENU_TRIGGER_SELECTOR =
+  'button[data-qa-id$=".viewMenu.pageLevelThreedotMenu"]';
+const DAILY_ACTIVITY_PAGE_ACTIONS_MENU_TRIGGER_SELECTOR =
+  'button[data-qa-id$="rs10TIMEI_DOC_DACTview.viewMenu.pageLevelThreedotMenu"]';
+const UPDATE_TIMESHEET_REFERENCE_BUTTON_SELECTOR =
+  'button[data-qa$=".viewActions.saveAndClose"], button[data-qa$=".viewActions.save"]';
+const UPDATE_TIMESHEET_MENU_ITEM_SELECTOR = [
+  'button[role="menuitem"][data-qa$=".additionalActionsMenu.LoadTimesheet"]',
+  'button[role="menuitem"][data-qa-id$=".additionalActionsMenu.LoadTimesheet"]',
+].join(", ");
+const TIMESHEET_TITLE_PATTERN = /Timesheet \(TIMEI\)/i;
+const UPDATE_TIMESHEET_SHORTCUT_REENABLE_DELAY_MS = 250;
 
 interface ColumnInfo {
   key: string;
@@ -62,6 +78,7 @@ let currentPrefs: ColumnPrefs = {
 let hasLoggedMissingGrid = false;
 const warnedMissingTasks = new Set<string>();
 let activeAutocomplete: ActiveAutocompleteState | null = null;
+let updateTimesheetShortcutPositionFrame: number | null = null;
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
@@ -142,6 +159,8 @@ function applyEnhancements() {
   try {
     ensureAutocompleteStyles();
     ensureTimeWarnStyles();
+    ensureUpdateTimesheetShortcutStyles();
+    syncUpdateTimesheetShortcut();
     closeAutocompleteIfStale();
 
     const grids = Array.from(
@@ -166,6 +185,242 @@ function applyEnhancements() {
       subtree: true,
     });
   }
+}
+
+// ─── Page Actions ────────────────────────────────────────────────────────────
+
+function syncUpdateTimesheetShortcut() {
+  if (!isTimesheetPage()) {
+    removeUpdateTimesheetShortcuts();
+    return;
+  }
+
+  const menuTrigger = getPageActionsMenuTrigger();
+
+  if (!menuTrigger || !hasDailyActivityGridContext()) {
+    removeUpdateTimesheetShortcuts();
+    return;
+  }
+
+  const shortcut = ensureUpdateTimesheetShortcut(menuTrigger);
+  syncUpdateTimesheetShortcutAppearance(shortcut, menuTrigger);
+  positionUpdateTimesheetShortcut(shortcut, menuTrigger);
+}
+
+function isTimesheetPage(): boolean {
+  return TIMESHEET_TITLE_PATTERN.test(document.title);
+}
+
+function getPageActionsMenuTrigger(): HTMLButtonElement | null {
+  const menuTrigger =
+    document.querySelector<HTMLButtonElement>(
+      DAILY_ACTIVITY_PAGE_ACTIONS_MENU_TRIGGER_SELECTOR,
+    ) ??
+    document.querySelector<HTMLButtonElement>(
+      PAGE_ACTIONS_MENU_TRIGGER_SELECTOR,
+    );
+
+  return menuTrigger && document.contains(menuTrigger) ? menuTrigger : null;
+}
+
+function hasDailyActivityGridContext(): boolean {
+  return Array.from(document.querySelectorAll<HTMLElement>('div[role="grid"]'))
+    .filter(isEnhanceableGrid)
+    .some((grid) => {
+      const mainHeaderRow = getMainHeaderRow(grid);
+      if (!mainHeaderRow) {
+        return false;
+      }
+
+      return getColumnHeaders(mainHeaderRow).some(
+        (header) => header.getAttribute("data-qa") === DAILY_ACTIVITY_QA,
+      );
+    });
+}
+
+function getUpdateTimesheetShortcutContainer(
+  menuTrigger: HTMLButtonElement,
+): HTMLElement | null {
+  const container = menuTrigger.parentElement;
+  return container && document.contains(container) ? container : null;
+}
+
+function ensureUpdateTimesheetShortcut(
+  menuTrigger: HTMLButtonElement,
+): HTMLButtonElement {
+  const shortcuts = Array.from(
+    document.querySelectorAll<HTMLButtonElement>(
+      `button[${UPDATE_TIMESHEET_SHORTCUT_ATTR}="true"]`,
+    ),
+  );
+  const existingShortcut = shortcuts[0];
+
+  shortcuts.forEach((shortcut) => {
+    if (shortcut !== existingShortcut) {
+      shortcut.remove();
+    }
+  });
+
+  if (existingShortcut) {
+    return existingShortcut;
+  }
+
+  const shortcut = document.createElement("button");
+  shortcut.type = "button";
+  shortcut.setAttribute(UPDATE_TIMESHEET_SHORTCUT_ATTR, "true");
+  shortcut.className = "adv-update-timesheet-shortcut";
+  shortcut.textContent = "Update Timesheet";
+  shortcut.setAttribute("aria-label", "Update Timesheet");
+  positionUpdateTimesheetShortcut(shortcut, menuTrigger);
+  shortcut.addEventListener("click", async () => {
+    if (shortcut.disabled) {
+      return;
+    }
+
+    shortcut.disabled = true;
+    shortcut.setAttribute("aria-busy", "true");
+
+    try {
+      const currentMenuTrigger = getPageActionsMenuTrigger();
+      if (!currentMenuTrigger) {
+        return;
+      }
+
+      await triggerNativeUpdateTimesheet(currentMenuTrigger);
+    } finally {
+      window.setTimeout(() => {
+        shortcut.disabled = false;
+        shortcut.removeAttribute("aria-busy");
+        syncUpdateTimesheetShortcut();
+      }, UPDATE_TIMESHEET_SHORTCUT_REENABLE_DELAY_MS);
+    }
+  });
+
+  return shortcut;
+}
+
+function syncUpdateTimesheetShortcutAppearance(
+  shortcut: HTMLButtonElement,
+  menuTrigger: HTMLButtonElement,
+) {
+  const referenceButton =
+    document.querySelector<HTMLButtonElement>(
+      UPDATE_TIMESHEET_REFERENCE_BUTTON_SELECTOR,
+    ) ?? menuTrigger;
+
+  if (referenceButton) {
+    shortcut.className = `${referenceButton.className} adv-update-timesheet-shortcut`;
+  }
+
+  const menuItem = getUpdateTimesheetMenuItem();
+  const disabled =
+    menuItem?.disabled === true || menuItem?.getAttribute("aria-disabled") === "true";
+  shortcut.disabled = disabled;
+}
+
+function positionUpdateTimesheetShortcut(
+  shortcut: HTMLButtonElement,
+  menuTrigger: HTMLButtonElement,
+) {
+  const container = getUpdateTimesheetShortcutContainer(menuTrigger);
+  if (!container) {
+    shortcut.remove();
+    return;
+  }
+
+  if (shortcut.parentElement !== container) {
+    container.insertBefore(shortcut, menuTrigger);
+  } else if (shortcut.nextElementSibling !== menuTrigger) {
+    container.insertBefore(shortcut, menuTrigger);
+  }
+
+  shortcut.style.removeProperty("top");
+  shortcut.style.removeProperty("left");
+  shortcut.style.removeProperty("visibility");
+}
+
+async function triggerNativeUpdateTimesheet(
+  menuTrigger: HTMLButtonElement,
+): Promise<boolean> {
+  const existingItem = getUpdateTimesheetMenuItem();
+  if (existingItem && !isElementDisabled(existingItem)) {
+    existingItem.click();
+    return true;
+  }
+
+  if (!document.contains(menuTrigger)) {
+    return false;
+  }
+
+  menuTrigger.click();
+
+  const menuItem = await waitForUpdateTimesheetMenuItem(1200);
+  if (!menuItem || isElementDisabled(menuItem)) {
+    if (document.contains(menuTrigger) && menuTrigger.getAttribute("aria-expanded") === "true") {
+      menuTrigger.click();
+    }
+    return false;
+  }
+
+  menuItem.click();
+  return true;
+}
+
+function getUpdateTimesheetMenuItem(): HTMLButtonElement | null {
+  const selectorMatch = document.querySelector<HTMLButtonElement>(
+    UPDATE_TIMESHEET_MENU_ITEM_SELECTOR,
+  );
+  if (selectorMatch) {
+    return selectorMatch;
+  }
+
+  return (
+    Array.from(document.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]')).find(
+      (button) => normalizeWhitespace(button.textContent) === "Update Timesheet",
+    ) ?? null
+  );
+}
+
+function isElementDisabled(element: HTMLButtonElement): boolean {
+  return element.disabled || element.getAttribute("aria-disabled") === "true";
+}
+
+function waitForUpdateTimesheetMenuItem(
+  timeoutMs: number,
+): Promise<HTMLButtonElement | null> {
+  return new Promise((resolve) => {
+    const deadline = Date.now() + timeoutMs;
+
+    const check = () => {
+      const menuItem = getUpdateTimesheetMenuItem();
+      if (menuItem) {
+        resolve(menuItem);
+        return;
+      }
+
+      if (Date.now() >= deadline) {
+        resolve(null);
+        return;
+      }
+
+      window.setTimeout(check, 50);
+    };
+
+    check();
+  });
+}
+
+function removeUpdateTimesheetShortcuts() {
+  if (updateTimesheetShortcutPositionFrame !== null) {
+    window.cancelAnimationFrame(updateTimesheetShortcutPositionFrame);
+    updateTimesheetShortcutPositionFrame = null;
+  }
+
+  document
+    .querySelectorAll<HTMLElement>(
+      `button[${UPDATE_TIMESHEET_SHORTCUT_ATTR}="true"]`,
+    )
+    .forEach((shortcut) => shortcut.remove());
 }
 
 function enhanceGrid(grid: HTMLElement) {
@@ -1032,6 +1287,40 @@ function ensureTimeWarnStyles() {
   document.head.appendChild(style);
 }
 
+function ensureUpdateTimesheetShortcutStyles() {
+  if (document.getElementById(UPDATE_TIMESHEET_SHORTCUT_STYLES_ID)) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = UPDATE_TIMESHEET_SHORTCUT_STYLES_ID;
+  style.textContent = `
+    .adv-update-timesheet-shortcut {
+      flex: 0 0 auto;
+      align-self: center;
+      white-space: nowrap;
+      margin: 0 12px 0 0;
+    }
+
+    .adv-update-timesheet-shortcut[aria-busy="true"] {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function scheduleUpdateTimesheetShortcutSync() {
+  if (updateTimesheetShortcutPositionFrame !== null) {
+    return;
+  }
+
+  updateTimesheetShortcutPositionFrame = window.requestAnimationFrame(() => {
+    updateTimesheetShortcutPositionFrame = null;
+    syncUpdateTimesheetShortcut();
+  });
+}
+
 function updateCellTimeWarning(cell: HTMLElement): void {
   const value = getCellDisplayValue(cell);
   if (
@@ -1224,6 +1513,10 @@ function normalizeSearchValue(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function normalizeWhitespace(value: string | null | undefined): string {
+  return value?.replace(/\s+/g, " ").trim() ?? "";
+}
+
 function setFormControlValue(
   input: HTMLInputElement | HTMLTextAreaElement,
   value: string,
@@ -1362,6 +1655,9 @@ function observeMutations() {
     childList: true,
     subtree: true,
   });
+
+  window.addEventListener("resize", scheduleUpdateTimesheetShortcutSync);
+  window.addEventListener("scroll", scheduleUpdateTimesheetShortcutSync, true);
 }
 
 // ─── Start ───────────────────────────────────────────────────────────────────
