@@ -22,8 +22,7 @@ const UPDATE_TIMESHEET_SHORTCUT_STYLES_ID =
   "adv-update-timesheet-shortcut-styles";
 const AUTOCOMPLETE_BOUND_ATTR = "data-adv-autocomplete-bound";
 const TIME_WARN_BOUND_ATTR = "data-adv-time-warn-bound";
-const UPDATE_TIMESHEET_SHORTCUT_ATTR =
-  "data-adv-update-timesheet-shortcut";
+const UPDATE_TIMESHEET_SHORTCUT_ATTR = "data-adv-update-timesheet-shortcut";
 const MAX_AUTOCOMPLETE_RESULTS = 8;
 const TIME_ENTRY_DAY_TOTAL_QA_PATTERN = /^DAY_\d+_TIME_TOT$/;
 const TIME_ENTRY_WEEK_TOTAL_QA_PATTERN = /^WEEK_\d+_TOT$/;
@@ -48,6 +47,19 @@ const UPDATE_TIMESHEET_MENU_ITEM_SELECTOR = [
 ].join(", ");
 const TIMESHEET_TITLE_PATTERN = /Timesheet \(TIMEI\)/i;
 const UPDATE_TIMESHEET_SHORTCUT_REENABLE_DELAY_MS = 250;
+const PAGINATION_BUTTON_SELECTOR = [
+  'button[data-qa-id*=".pagination."]',
+  'button[data-qa*="records"]',
+  'button[title*="records"]',
+  'button[aria-label*="records per page"]',
+].join(", ");
+const PAGINATION_SCOPE_KEY_PATTERN = /^(.*)\.pagination\./i;
+const PAGINATION_ID_COUNT_PATTERN = /\.pagination\.(\d+)Records\b/i;
+const PAGINATION_LABEL_COUNT_PATTERN = /(\d+)\s*records(?:\s+per\s+page)?/i;
+const PAGINATION_TEXT_COUNT_PATTERN = /^(\d+)$/;
+const DEFAULT_PAGINATION_COUNT = 20;
+const MIN_AUTO_PAGINATION_COUNT = 50;
+const PAGINATION_CLICK_COOLDOWN_MS = 1500;
 
 interface ColumnInfo {
   key: string;
@@ -69,6 +81,11 @@ interface ActiveAutocompleteState {
   cleanup: () => void;
 }
 
+interface PaginationOption {
+  button: HTMLButtonElement;
+  count: number;
+}
+
 let lookupMap: Map<string, string> = new Map();
 let lookupEntries: AutocompleteLookupEntry[] = [];
 let currentPrefs: ColumnPrefs = {
@@ -79,6 +96,7 @@ let hasLoggedMissingGrid = false;
 const warnedMissingTasks = new Set<string>();
 let activeAutocomplete: ActiveAutocompleteState | null = null;
 let updateTimesheetShortcutPositionFrame: number | null = null;
+let recentPaginationClicks = new Map<string, { count: number; time: number }>();
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
@@ -314,7 +332,8 @@ function syncUpdateTimesheetShortcutAppearance(
 
   const menuItem = getUpdateTimesheetMenuItem();
   const disabled =
-    menuItem?.disabled === true || menuItem?.getAttribute("aria-disabled") === "true";
+    menuItem?.disabled === true ||
+    menuItem?.getAttribute("aria-disabled") === "true";
   shortcut.disabled = disabled;
 }
 
@@ -356,7 +375,10 @@ async function triggerNativeUpdateTimesheet(
 
   const menuItem = await waitForUpdateTimesheetMenuItem(1200);
   if (!menuItem || isElementDisabled(menuItem)) {
-    if (document.contains(menuTrigger) && menuTrigger.getAttribute("aria-expanded") === "true") {
+    if (
+      document.contains(menuTrigger) &&
+      menuTrigger.getAttribute("aria-expanded") === "true"
+    ) {
       menuTrigger.click();
     }
     return false;
@@ -375,8 +397,11 @@ function getUpdateTimesheetMenuItem(): HTMLButtonElement | null {
   }
 
   return (
-    Array.from(document.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]')).find(
-      (button) => normalizeWhitespace(button.textContent) === "Update Timesheet",
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]'),
+    ).find(
+      (button) =>
+        normalizeWhitespace(button.textContent) === "Update Timesheet",
     ) ?? null
   );
 }
@@ -438,6 +463,192 @@ function enhanceGrid(grid: HTMLElement) {
   applyFrozenColumns(grid, layoutHeaderRow);
   bindDailyActivityAutocomplete(grid, mainHeaderRow);
   applyTimeWarnings(grid, mainHeaderRow);
+  autoSelectHighestPaginationOption(grid);
+}
+
+function autoSelectHighestPaginationOption(grid: HTMLElement) {
+  const buttons = getPaginationButtonsForGrid(grid);
+  if (buttons.length === 0) {
+    return;
+  }
+
+  const options = buttons
+    .map((button) => {
+      const count = parsePaginationCount(button);
+      if (count === null) {
+        return null;
+      }
+
+      return { button, count };
+    })
+    .filter((option): option is PaginationOption => option !== null)
+    .sort((left, right) => right.count - left.count);
+
+  const highestOption = options.find(
+    ({ count, button }) =>
+      count >= MIN_AUTO_PAGINATION_COUNT &&
+      count !== DEFAULT_PAGINATION_COUNT &&
+      !isElementDisabled(button),
+  );
+
+  if (!highestOption || isPaginationOptionCurrent(highestOption.button)) {
+    return;
+  }
+
+  const scopeKey = getPaginationScopeKey(grid, buttons);
+  if (hasRecentPaginationClick(scopeKey, highestOption.count)) {
+    return;
+  }
+
+  if (!document.contains(highestOption.button)) {
+    return;
+  }
+
+  rememberPaginationClick(scopeKey, highestOption.count);
+  highestOption.button.click();
+}
+
+function getPaginationButtonsForGrid(grid: HTMLElement): HTMLButtonElement[] {
+  const scope = getPaginationScopeElement(grid);
+  if (!scope) {
+    return [];
+  }
+
+  return Array.from(
+    scope.querySelectorAll<HTMLButtonElement>(PAGINATION_BUTTON_SELECTOR),
+  ).filter(
+    (button) => isVisible(button) && parsePaginationCount(button) !== null,
+  );
+}
+
+function getPaginationScopeElement(grid: HTMLElement): HTMLElement | null {
+  let fallback: HTMLElement | null = null;
+
+  for (
+    let ancestor = grid.parentElement;
+    ancestor && ancestor !== document.body;
+    ancestor = ancestor.parentElement
+  ) {
+    const buttons = ancestor.querySelectorAll<HTMLButtonElement>(
+      PAGINATION_BUTTON_SELECTOR,
+    );
+    if (buttons.length === 0) {
+      continue;
+    }
+
+    fallback ??= ancestor;
+
+    const grids = Array.from(
+      ancestor.querySelectorAll<HTMLElement>('div[role="grid"]'),
+    ).filter(isEnhanceableGrid);
+
+    if (grids.length === 1 && grids[0] === grid) {
+      return ancestor;
+    }
+  }
+
+  return fallback;
+}
+
+function parsePaginationCount(button: HTMLButtonElement): number | null {
+  const candidates = [
+    button.getAttribute("data-qa-id"),
+    button.getAttribute("data-qa"),
+    button.getAttribute("title"),
+    button.getAttribute("aria-label"),
+    button.textContent,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeWhitespace(candidate);
+    if (!normalized) {
+      continue;
+    }
+
+    const match =
+      normalized.match(PAGINATION_ID_COUNT_PATTERN) ??
+      normalized.match(PAGINATION_LABEL_COUNT_PATTERN) ??
+      normalized.match(PAGINATION_TEXT_COUNT_PATTERN);
+
+    if (!match) {
+      continue;
+    }
+
+    const count = Number.parseInt(match[1], 10);
+    if (!Number.isNaN(count)) {
+      return count;
+    }
+  }
+
+  return null;
+}
+
+function isPaginationOptionCurrent(button: HTMLButtonElement): boolean {
+  return (
+    button.getAttribute("aria-current") === "true" ||
+    button.getAttribute("aria-pressed") === "true"
+  );
+}
+
+function getPaginationScopeKey(
+  grid: HTMLElement,
+  buttons: HTMLButtonElement[],
+): string {
+  for (const button of buttons) {
+    const qaId = button.getAttribute("data-qa-id");
+    const match = qaId?.match(PAGINATION_SCOPE_KEY_PATTERN);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  const mainHeaderRow = getMainHeaderRow(grid);
+  if (mainHeaderRow) {
+    const headerKey = getColumnHeaders(mainHeaderRow)
+      .map((header) => getColumnKey(header))
+      .filter((key) => key.length > 0)
+      .join("|");
+
+    if (headerKey.length > 0) {
+      return `grid:${headerKey}`;
+    }
+  }
+
+  const gridIndex = Array.from(
+    document.querySelectorAll<HTMLElement>('div[role="grid"]'),
+  )
+    .filter(isEnhanceableGrid)
+    .indexOf(grid);
+  return `grid-index:${gridIndex}`;
+}
+
+function hasRecentPaginationClick(scopeKey: string, count: number): boolean {
+  pruneRecentPaginationClicks();
+
+  const recentClick = recentPaginationClicks.get(scopeKey);
+  if (!recentClick) {
+    return false;
+  }
+
+  return recentClick.count === count;
+}
+
+function rememberPaginationClick(scopeKey: string, count: number) {
+  recentPaginationClicks.set(scopeKey, { count, time: Date.now() });
+}
+
+function pruneRecentPaginationClicks() {
+  const cutoff = Date.now() - PAGINATION_CLICK_COOLDOWN_MS;
+
+  recentPaginationClicks.forEach((value, key) => {
+    if (value.time < cutoff) {
+      recentPaginationClicks.delete(key);
+    }
+  });
+}
+
+function isVisible(element: HTMLElement): boolean {
+  return element.getClientRects().length > 0;
 }
 
 function isEnhanceableGrid(grid: HTMLElement): boolean {

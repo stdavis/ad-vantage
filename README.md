@@ -9,6 +9,7 @@ A Chrome extension that makes the [Vantage timesheet app](https://vantage.utah.g
 - **Description lookup column** — Add an optional column that displays task descriptions pulled from a CSV file you upload.
 - **Daily Activity autocomplete** — Get suggestions as you type in the Daily Activity field, sourced from your uploaded lookup data.
 - **Update Timesheet shortcut** — On `Timesheet (TIMEI)` in the `Daily Activity` tab, adds an `Update Timesheet` button next to the lower three-dot menu so you can trigger the native action in one click.
+- **Automatic pagination upgrade** — On grids that expose larger page sizes, the extension automatically selects the highest available visible option above the default 20 rows, including after adding a new row when the grid resets.
 - **Quarter-hour warnings** — Time cells that don't end in `:00`, `:15`, `:30`, or `:45` are highlighted with an orange outline, helping you catch accidental decimal-style entries.
 - Works on both `vantage.utah.gov` and `vantage.access.utah.gov` (for non-state networks).
 
@@ -36,6 +37,7 @@ The extension icon will appear in your Chrome toolbar. It is only active when yo
    - Show or hide individual columns.
    - Upload or replace the description lookup CSV.
 4. On `Timesheet (TIMEI)` with the `Daily Activity` grid visible, use the added `Update Timesheet` button beside the lower three-dot menu to run the same native update action without opening the menu first.
+5. When a grid shows inline pagination options such as `50` or `100`, the extension automatically switches to the highest enabled option on load and after row additions if the grid falls back to `20`.
 
 ### Description Lookup CSV
 
