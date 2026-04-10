@@ -120,19 +120,13 @@ Add these repository secrets to enable automated publishing on release:
 - `CWS_CLIENT_ID`
 - `CWS_CLIENT_SECRET`
 - `CWS_REFRESH_TOKEN`
-- `CWS_PUBLISHER_ID`
 - `CWS_EXTENSION_ID`
 
 If any secret is missing, the release workflow still uploads the built zip to GitHub Releases and skips the Chrome Web Store step.
 
-To generate the OAuth credentials:
+To generate the OAuth credentials, follow [this guide](https://github.com/fregante/chrome-webstore-upload-keys).
 
-1. In Google Cloud, enable the Chrome Web Store API.
-2. Configure an OAuth consent screen and create an OAuth client.
-3. Generate a refresh token with the `https://www.googleapis.com/auth/chromewebstore` scope.
-4. Copy your publisher ID from the Chrome Web Store developer dashboard and the extension ID from the published item.
-
-Once configured, each published GitHub release will build the extension, zip `dist`, upload the archive to GitHub Releases, and submit it to the Chrome Web Store for review.
+Once configured, each published GitHub release will build the extension, zip `dist`, upload the archive to GitHub Releases, and publish it to the Chrome Web Store.
 
 ### Releases
 
