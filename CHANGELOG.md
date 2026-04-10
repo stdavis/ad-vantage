@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/stdavis/ad-vantage/compare/v1.3.1...v1.3.2) (2026-04-10)
+
+
+### Features
+
+* auto-select the highest pagination option for grids ([a2358be](https://github.com/stdavis/ad-vantage/commit/a2358be2f3b78e1c11eba2c15c76e5479a649ac2)), closes [#13](https://github.com/stdavis/ad-vantage/issues/13)
+* easier access to "Update Timesheet" button ([7583c94](https://github.com/stdavis/ad-vantage/commit/7583c944df8ca08e77e4230e1fd051281acaf280)), closes [#11](https://github.com/stdavis/ad-vantage/issues/11)
+
 ## [1.3.1](https://github.com/stdavis/ad-vantage/compare/v1.3.0...v1.3.1) (2026-04-08)
 
 
