@@ -53,7 +53,7 @@ Uploading a CSV file enables the Description column and Daily Activity autocompl
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18 or higher
+- [Node.js](https://nodejs.org/) 22.12+
 - [pnpm](https://pnpm.io/) (install with `npm install -g pnpm` or via [other methods](https://pnpm.io/installation))
 
 ### Local Development
