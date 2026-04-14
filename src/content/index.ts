@@ -1345,7 +1345,7 @@ function handleAutocompleteKeydown(
 ) {
   const state = activeAutocomplete;
 
-  if (event.key === "ArrowDown") {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
     if (!state || state.input !== input) {
       updateAutocompleteSuggestions(input, input.value);
     }
@@ -1355,15 +1355,8 @@ function handleAutocompleteKeydown(
       activeAutocomplete.suggestions.length > 0
     ) {
       event.preventDefault();
-      moveAutocompleteHighlight(1);
-    }
-    return;
-  }
-
-  if (event.key === "ArrowUp") {
-    if (state?.input === input && state.suggestions.length > 0) {
-      event.preventDefault();
-      moveAutocompleteHighlight(-1);
+      event.stopPropagation();
+      moveAutocompleteHighlight(event.key === "ArrowDown" ? 1 : -1);
     }
     return;
   }
@@ -1379,6 +1372,7 @@ function handleAutocompleteKeydown(
   if (event.key === "Enter") {
     if (state?.input === input && state.suggestions.length > 0) {
       event.preventDefault();
+      event.stopPropagation();
       selectAutocompleteSuggestion(input, state.highlightedIndex, {
         keepFocus: true,
       });
