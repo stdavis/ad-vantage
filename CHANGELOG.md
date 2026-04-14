@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.4](https://github.com/stdavis/ad-vantage/compare/v1.3.3...v1.3.4) (2026-04-14)
+
+
+### Bug Fixes
+
+* address rollup 4 security issue ([c0a7eab](https://github.com/stdavis/ad-vantage/commit/c0a7eab1911e741c1d98fcb953cf80674221d3f7))
+* fix arrow key behavior in project typeahead ([db36a74](https://github.com/stdavis/ad-vantage/commit/db36a74598c4be739440d4b92f26a259e083a2c5)), closes [#12](https://github.com/stdavis/ad-vantage/issues/12)
+
 ## [1.3.3](https://github.com/stdavis/ad-vantage/compare/v1.3.2...v1.3.3) (2026-04-14)
 
 
