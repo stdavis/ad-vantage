@@ -16,7 +16,9 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ],
-    "overrides": {}
+    "overrides": {
+      "rollup@<2.80.0": ">=2.80.0"
+    }
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.4.0",
