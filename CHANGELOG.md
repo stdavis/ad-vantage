@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/stdavis/ad-vantage/compare/v1.3.2...v1.3.3) (2026-04-14)
+
+
+### Dependencies
+
+* bump npm dependencies ([3814b42](https://github.com/stdavis/ad-vantage/commit/3814b42e91e4e107b506ca97cb543336c07ef534))
+
 ## [1.3.2](https://github.com/stdavis/ad-vantage/compare/v1.3.1...v1.3.2) (2026-04-10)
 
 
